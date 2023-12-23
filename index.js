@@ -23,7 +23,12 @@ db.on('error', (err) => {
 db.once('open', () => {
   console.log('Connected to MongoDB');
 
-  const employeeCollection = mongoose.model('task', new mongoose.Schema({}, { strict: false }));
+  const userCollection = mongoose.model('users', new mongoose.Schema({}, { strict: false }));
+
+  app.get('/users', async(req, res)=>{
+    const result = await userCollection.find();
+    res.send(result);
+  })
 
 });
 

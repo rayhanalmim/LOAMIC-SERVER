@@ -1,0 +1,560 @@
+[
+    {
+        "ID": 27,
+        "Last_Name_and_Suffix": "Quezada",
+        "First_Name": "Vincent",
+        "Status": "Active",
+        "Pin": 2249,
+        "Role": "employee",
+        "Trade": "Carpenter Apprenticeship Period: 1"
+    },
+    {
+        "ID": 104,
+        "Last_Name_and_Suffix": "Villegas",
+        "First_Name": "Victor",
+        "Status": "Active",
+        "Pin": 8598,
+        "Role": "employee",
+        "Trade": "Laborer Apprenticeship Period: 5"
+    },
+    {
+        "ID": 18,
+        "Last_Name_and_Suffix": "Wildman",
+        "First_Name": "Tobias",
+        "Status": "Active",
+        "Pin": 4758,
+        "Role": "Manager",
+        "Trade": "Carpenter"
+    },
+    {
+        "ID": 28,
+        "Last_Name_and_Suffix": "Neal",
+        "First_Name": "Ryan",
+        "Status": "Active",
+        "Pin": 5192,
+        "Role": "employee",
+        "Trade": "Carpenter"
+    },
+    {
+        "ID": 105,
+        "Last_Name_and_Suffix": "Serrano",
+        "First_Name": "Ruben",
+        "Status": "Active",
+        "Pin": 2365,
+        "Role": "employee",
+        "Trade": "Laborer Apprenticeship Period: 4"
+    },
+    {
+        "ID": 13,
+        "Last_Name_and_Suffix": "Guerra",
+        "First_Name": "Rafael",
+        "Status": "Active",
+        "Pin": 2356,
+        "Role": "employee",
+        "Trade": "cement mason  Period:"
+    },
+    {
+        "ID": 106,
+        "Last_Name_and_Suffix": "Morales",
+        "First_Name": "Miguel",
+        "Status": "Active",
+        "Pin": 9878,
+        "Role": "employee",
+        "Trade": "Laborer Apprenticeship Period: 4"
+    },
+    {
+        "ID": 111,
+        "Last_Name_and_Suffix": "Rentfrow",
+        "First_Name": "Mark",
+        "Status": "Active",
+        "Pin": 9859,
+        "Role": "employee",
+        "Trade": "cement mason Apprenticeship Period: 1"
+    },
+    {
+        "ID": 8,
+        "Last_Name_and_Suffix": "Hanthel",
+        "First_Name": "Loay",
+        "Status": "Active",
+        "Pin": 226,
+        "Role": "Manager",
+        "Trade": "Manager"
+    },
+    {
+        "ID": 103,
+        "Last_Name_and_Suffix": "Cortes",
+        "First_Name": "Leobardo",
+        "Status": "Active",
+        "Pin": 8579,
+        "Role": "employee",
+        "Trade": "Laborer Apprenticeship Period: 4"
+    },
+    {
+        "ID": 102,
+        "Last_Name_and_Suffix": "Mario",
+        "First_Name": "Juan",
+        "Status": "Active",
+        "Pin": 2569,
+        "Role": "employee",
+        "Trade": "Laborer Apprenticeship Period: 4"
+    },
+    {
+        "ID": 108,
+        "Last_Name_and_Suffix": "Massey",
+        "First_Name": "Joseph",
+        "Status": "Active",
+        "Pin": 2810,
+        "Role": "Manager",
+        "Trade": "Carpenter"
+    },
+    {
+        "ID": 112,
+        "Last_Name_and_Suffix": "Sandoval-Zavala",
+        "First_Name": "Jorge",
+        "Status": "Active",
+        "Pin": 2991,
+        "Role": "employee",
+        "Trade": "Laborer Apprenticeship Period: 4"
+    },
+    {
+        "ID": 110,
+        "Last_Name_and_Suffix": "Serrato",
+        "First_Name": "Jorge",
+        "Status": "Active",
+        "Pin": 2279,
+        "Role": "employee",
+        "Trade": "Laborer Apprenticeship Period: 1"
+    },
+    {
+        "ID": 113,
+        "Last_Name_and_Suffix": "Molina",
+        "First_Name": "Edward",
+        "Status": "Active",
+        "Pin": 4474,
+        "Role": "employee",
+        "Trade": "Carpenter Apprenticeship Period: 1"
+    },
+    {
+        "ID": 101,
+        "Last_Name_and_Suffix": "Antonio",
+        "First_Name": "CESAR",
+        "Status": "Active",
+        "Pin": 9658,
+        "Role": "employee",
+        "Trade": "Laborer Apprenticeship Period: 4"
+    },
+    {
+        "ID": 107,
+        "Last_Name_and_Suffix": "Gonzales",
+        "First_Name": "Carlos",
+        "Status": "Active",
+        "Pin": 9821,
+        "Role": "employee",
+        "Trade": "Laborer Apprenticeship Period: 4"
+    },
+    {
+        "ID": 109,
+        "Last_Name_and_Suffix": "Jimenez",
+        "First_Name": "Alexander",
+        "Status": "Active",
+        "Pin": 5861,
+        "Role": "employee",
+        "Trade": "Laborer Apprenticeship Period: 1"
+    },
+    {
+        "ID": 1,
+        "Last_Name_and_Suffix": "Hanthel",
+        "First_Name": "Laith",
+        "Status": "Active",
+        "Pin": 3686,
+        "Role": "Admin",
+        "Trade": "Admin"
+    },
+    {
+        "ID": 51,
+        "Last_Name_and_Suffix": "Moises",
+        "First_Name": "Villalobos",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 2,
+        "Last_Name_and_Suffix": "Aranda Vazquez",
+        "First_Name": "Victor",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 41,
+        "Last_Name_and_Suffix": "Cervantes",
+        "First_Name": "Victor",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 12,
+        "Last_Name_and_Suffix": "Gaucin",
+        "First_Name": "Ubaldo",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 45,
+        "Last_Name_and_Suffix": "Gabriel",
+        "First_Name": "Solorzano",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 23,
+        "Last_Name_and_Suffix": "James",
+        "First_Name": "Robinson",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 24,
+        "Last_Name_and_Suffix": "Vincent",
+        "First_Name": "Robinson",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 31,
+        "Last_Name_and_Suffix": "Valadez",
+        "First_Name": "Regina",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 26,
+        "Last_Name_and_Suffix": "Gonsales",
+        "First_Name": "Ramon",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 19,
+        "Last_Name_and_Suffix": "Carranza",
+        "First_Name": "Miguel",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 5,
+        "Last_Name_and_Suffix": "Massey",
+        "First_Name": "Michael",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "Manager",
+        "Trade": ""
+    },
+    {
+        "ID": 20,
+        "Last_Name_and_Suffix": "Molina",
+        "First_Name": "Luis",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 34,
+        "Last_Name_and_Suffix": "Ramirez Melchor",
+        "First_Name": "Juan Manuel",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 11,
+        "Last_Name_and_Suffix": "Gonzalez",
+        "First_Name": "Juan",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 14,
+        "Last_Name_and_Suffix": "Cortez",
+        "First_Name": "Jose",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 42,
+        "Last_Name_and_Suffix": "Lopez",
+        "First_Name": "Jose",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 29,
+        "Last_Name_and_Suffix": "Roque",
+        "First_Name": "Jorge",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 4,
+        "Last_Name_and_Suffix": "Price",
+        "First_Name": "James",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 48,
+        "Last_Name_and_Suffix": "Castaneda",
+        "First_Name": "Ismael",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 37,
+        "Last_Name_and_Suffix": "Modesto",
+        "First_Name": "Guillen",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 50,
+        "Last_Name_and_Suffix": "Salud",
+        "First_Name": "Gonzalez",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 39,
+        "Last_Name_and_Suffix": "Razo",
+        "First_Name": "Gabriel",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 36,
+        "Last_Name_and_Suffix": "Solorzano",
+        "First_Name": "Gabriel",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 44,
+        "Last_Name_and_Suffix": "Vazquez-Lopez",
+        "First_Name": "Fermin",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 38,
+        "Last_Name_and_Suffix": "Melchor",
+        "First_Name": "Federico",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 30,
+        "Last_Name_and_Suffix": "Salinas Jr",
+        "First_Name": "Enrique",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 16,
+        "Last_Name_and_Suffix": "Meza",
+        "First_Name": "Eduardo",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 7,
+        "Last_Name_and_Suffix": "Reed",
+        "First_Name": "Derrick",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 10,
+        "Last_Name_and_Suffix": "Mayorga",
+        "First_Name": "David",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 47,
+        "Last_Name_and_Suffix": "Lemus",
+        "First_Name": "Daniel",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 46,
+        "Last_Name_and_Suffix": "Lopez",
+        "First_Name": "Daniel",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 3,
+        "Last_Name_and_Suffix": "Butson",
+        "First_Name": "Cody",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 43,
+        "Last_Name_and_Suffix": "Francisco",
+        "First_Name": "Chavez",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 15,
+        "Last_Name_and_Suffix": "Barrientos",
+        "First_Name": "Cesar",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 40,
+        "Last_Name_and_Suffix": "Galvez",
+        "First_Name": "Carlos",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 25,
+        "Last_Name_and_Suffix": "Salinas",
+        "First_Name": "Carlos",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 32,
+        "Last_Name_and_Suffix": "Solorzano",
+        "First_Name": "Carlos",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 21,
+        "Last_Name_and_Suffix": "Mejia",
+        "First_Name": "Brayan",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 33,
+        "Last_Name_and_Suffix": "Carrillo",
+        "First_Name": "Armando",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 9,
+        "Last_Name_and_Suffix": "Rodriguez",
+        "First_Name": "Antonio",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 35,
+        "Last_Name_and_Suffix": "Marquez",
+        "First_Name": "Anthony",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 17,
+        "Last_Name_and_Suffix": "Williams",
+        "First_Name": "Albert",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    },
+    {
+        "ID": 22,
+        "Last_Name_and_Suffix": "Hanthel",
+        "First_Name": "Consulting",
+        "Status": "inactive",
+        "Pin": "",
+        "Role": "employee",
+        "Trade": ""
+    }
+]
