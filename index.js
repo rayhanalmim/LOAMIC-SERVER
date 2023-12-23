@@ -30,6 +30,14 @@ db.once('open', () => {
     res.send(result);
   })
 
+  app.get('/currentUser', async (req, res)=>{
+    const pin = req.query.pin;
+    const pinInt = parseInt(pin);
+    console.log(pinInt)
+    const result = await userCollection.find({ Pin : pinInt})
+    res.send(result);
+  })
+
 });
 
 app.get('/', (req, res) => {
