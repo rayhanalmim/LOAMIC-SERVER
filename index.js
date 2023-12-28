@@ -24,6 +24,7 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 
   const userCollection = mongoose.model('users', new mongoose.Schema({}, { strict: false }));
+  const contractCollection = mongoose.model('contract', new mongoose.Schema({}, { strict: false }));
 
   app.get('/users', async(req, res)=>{
     const result = await userCollection.find();
@@ -35,6 +36,11 @@ db.once('open', () => {
     const pinInt = parseInt(pin);
     console.log(pinInt)
     const result = await userCollection.find({ Pin : pinInt})
+    res.send(result);
+  })
+
+  app.get('/contract', async (req, res)=>{
+    const result = await contractCollection.find();
     res.send(result);
   })
 
