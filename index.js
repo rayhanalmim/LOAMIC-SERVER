@@ -34,13 +34,45 @@ const dailyReportCollection = mongoose.model('dailyReport', new mongoose.Schema(
 // ------------------------------dailyReport---------------------------------------
 app.get('/dailyReport', async(req, res)=>{
   const info = req.body;
-  const userId = req.body.userId;
-  const projectId = req.body.projectId;
-  
+  // const userId = req.body.userId;
+  // const projectId = req.body.projectId;
+  const userId = 27;
+  const projectId = 807;
+  console.log(userId, projectId);
+
+  const user = await userCollection.findOne({ ID : userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
+  const project = await projectCollection.findOne({ Project_id : projectId } , { Project_id: 1, Project_Name: 1,  _id: 0 });
+
   const weatherInfo = await axios.get('https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=e207b65ba744eac979f0272996cbfa4d');
   const currentWaither = {weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main};
 
-  res.send(currentWaither);
+  const dailyReport = {
+    job_name: project.Project_Name,
+    job_id: project.Project_id,
+    employee_name: user.First_Name + user.Last_Name_and_Suffix,
+    date: new Date,
+    weather_condition: {weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main},
+    activity: 'PlaceholderActivity',
+    manpower: {
+      employee: 'PlaceholderEmployee',
+      hours: 'PlaceholderHours',
+      injured: 'PlaceholderInjured',
+    },
+    rental: 'PlaceholderRental',
+    isInjury: false,
+    injury_img: 'PlaceholderInjuryImage',
+    progress_img: 'PlaceholderProgressImage',
+    eod_img: 'PlaceholderEODImage',
+    receipt_img: 'PlaceholderReceiptImage',
+    checkOut_question: {
+      take_break: 'PlaceholderTakeBreak',
+      take_lunch: 'PlaceholderTakeLunch',
+      isInjured: 'PlaceholderIsInjured',
+    },
+  };
+  
+  console.log(dailyReport)
+  res.send(dailyReport);
 })
 
 app.get('/users', async(req, res)=>{
