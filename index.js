@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const app = express();
 const port = process.env.PORT || 5000;
+const axios = require('axios');
 
 app.use(cors())
 app.use(express.json())
@@ -28,6 +29,19 @@ const contractCollection = mongoose.model('contract', new mongoose.Schema({}, { 
 const projectCollection = mongoose.model('project', new mongoose.Schema({}, { strict: false }));
 const companyInfo = mongoose.model('aboutUs', new mongoose.Schema({}, { strict: false }));
 const adminCollection = mongoose.model('UserRole', new mongoose.Schema({}, { strict: false }));
+const dailyReportCollection = mongoose.model('dailyReport', new mongoose.Schema({}, { strict: false }));
+
+// ------------------------------dailyReport---------------------------------------
+app.get('/dailyReport', async(req, res)=>{
+  const info = req.body;
+  const userId = req.body.userId;
+  const projectId = req.body.projectId;
+  
+  const weatherInfo = await axios.get('https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=e207b65ba744eac979f0272996cbfa4d');
+  const currentWaither = {weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main};
+
+  res.send(currentWaither);
+})
 
 app.get('/users', async(req, res)=>{
   const result = await userCollection.find();
@@ -53,7 +67,8 @@ app.get('/contract', async (req, res)=>{
 })
 
 app.get('/projects', async (req, res)=>{
-  const result = await projectCollection.find();
+  const result = await projectCollection.find({ status: 'Active'});
+  // const result = await surveyCollection.find({ surveyor: email })
   res.send(result);
 })
 
@@ -71,6 +86,8 @@ app.get('/isAdmin', async (req, res)=>{
     return res.status(402).send({message: 'Unauthorize access'})
   }
 })
+
+// --------------------------------------localApi-------------------------------------------
 
 app.get('/', (req, res) => {
   res.send('Loamic server running');
