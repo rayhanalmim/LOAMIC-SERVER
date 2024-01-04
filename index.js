@@ -34,6 +34,10 @@ const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.S
 
 // --------------------------dailyWorkingBaseProject----------------------------------
 
+app.get('/dailyRunningProject', async(req, res)=>{
+  const result = await dailyRunningProject.find();
+  res.send(result);
+})
 
 app.post('/checkIn', async(req, res)=>{
   const data = req.body;
