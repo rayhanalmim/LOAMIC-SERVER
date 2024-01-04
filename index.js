@@ -30,6 +30,27 @@ const projectCollection = mongoose.model('project', new mongoose.Schema({}, { st
 const companyInfo = mongoose.model('aboutUs', new mongoose.Schema({}, { strict: false }));
 const adminCollection = mongoose.model('UserRole', new mongoose.Schema({}, { strict: false }));
 const dailyReportCollection = mongoose.model('dailyReport', new mongoose.Schema({}, { strict: false }));
+const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.Schema({}, { strict: false }));
+
+// --------------------------dailyWorkingBaseProject----------------------------------
+
+
+app.post('/checkIn', async(req, res)=>{
+  const data = req.body;
+  const id = data.projectId;
+  const project = await projectCollection.findOne({ Project_id : id }, { _id: 0});
+
+  const isExist = await dailyRunningProject.findOne({'project.Project_id': id})
+  console.log(isExist)
+
+  if(isExist){
+    return res.send({massege: 'this project already listed in current project collection'})
+  }
+
+  const result = await dailyRunningProject.create({project})
+  
+  res.send(result)
+})
 
 // ------------------------------dailyReport---------------------------------------
 app.get('/dailyReport', async(req, res)=>{
