@@ -134,7 +134,21 @@ app.get('/isAdmin', async (req, res)=>{
   const email = req.query.email;
   const password = req.query.password;
   console.log(email, password)
-  const isExists = await adminCollection.findOne({ email_address: email, password: password })
+  const isExists = await adminCollection.findOne({ email_address: email, password: password, Role: 'Admin' })
+  console.log(isExists)
+  if(isExists){
+    return res.send(isExists)
+  }
+  else{
+    return res.status(402).send({message: 'Unauthorize access'})
+  }
+})
+
+app.get('/isManager', async (req, res)=>{
+  const email = req.query.email;
+  const password = req.query.password;
+  console.log(email, password)
+  const isExists = await adminCollection.findOne({ email_address: email, password: password, Role: 'Manager' })
   console.log(isExists)
   if(isExists){
     return res.send(isExists)
