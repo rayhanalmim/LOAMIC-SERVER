@@ -39,19 +39,23 @@ app.get('/dailyRunningProject', async(req, res)=>{
   res.send(result);
 })
 
+// -------------------------------------------------------checkIn-----------------------------------------------
 app.post('/checkIn', async(req, res)=>{
   const data = req.body;
-  const id = data.projectId;
-  const project = await projectCollection.findOne({ Project_id : id }, { _id: 0});
+  const id = req.query.projectId;
+  console.log(data)
 
-  const isExist = await dailyRunningProject.findOne({'project.Project_id': id})
-  console.log(isExist)
+  const idInt = parseInt(id)
+
+  const project = await projectCollection.findOne({ Project_id : idInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0 , Project: 1 });
+
+  const isExist = await dailyRunningProject.findOne({'project.Project_id': idInt})
 
   if(isExist){
     return res.send({massege: 'this project already listed in current project collection'})
   }
 
-  const result = await dailyRunningProject.create({project})
+  const result = await dailyRunningProject.create({project, managerInfo: data, checkInDate: new Date(), isCheckIn: true});
   
   res.send(result)
 })
@@ -118,11 +122,17 @@ app.get('/currentUser', async (req, res)=>{
   res.send(result);
 })
 
+// -------------------------------------projectBaseContract--------------------------------------
 app.get('/contract', async (req, res)=>{
-  const result = await contractCollection.find();
+  const id = req.query.projectId;
+  const idInt = parseInt(id);
+  console.log(idInt)
+  const result = await contractCollection.find({ Project_id : idInt });
+  console.log(result)
   res.send(result);
 })
 
+// ------------------------------project----------------------------------
 app.get('/projects', async (req, res)=>{
   const result = await projectCollection.find({ status: 'Active'});
   // const result = await surveyCollection.find({ surveyor: email })
