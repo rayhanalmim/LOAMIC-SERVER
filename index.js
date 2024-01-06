@@ -34,34 +34,31 @@ const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.S
 
 // --------------------------dailyWorkingBaseProject----------------------------------
 
-app.get('/dailyRunningProject', async(req, res)=>{
+app.get('/dailyRunningProject', async (req, res) => {
   const result = await dailyRunningProject.find();
   res.send(result);
 })
 
 // -------------------------------------------------------checkIn-----------------------------------------------
-app.post('/checkIn', async(req, res)=>{
-  const data = req.body;
+app.post('/checkIn', async (req, res) => {
   const id = req.query.projectId;
-  console.log(data)
-
-  const idInt = parseInt(id)
-
-  const project = await projectCollection.findOne({ Project_id : idInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0 , Project: 1 });
-
-  const isExist = await dailyRunningProject.findOne({'project.Project_id': idInt})
-
-  if(isExist){
-    return res.send({massege: 'this project already listed in current project collection'})
+  const managerID = req.query.managerId;
+  const projectIdInt = parseInt(id)
+  const managerIdInt = parseInt(managerID)
+  const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1 });
+  const manager = await adminCollection.findOne({ ID: managerIdInt }, { ID: 1, Employee_First_Name: 1, Employee_Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
+  const isExist = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt })
+  if (isExist) {
+    return res.send({ massege: 'this project already listed in current project collection' })
   }
-
-  const result = await dailyRunningProject.create({project, managerInfo: data, checkInDate: new Date(), isCheckIn: true});
-  
-  res.send(result)
+  else {
+    const result = await dailyRunningProject.create({ project, checkInDate: new Date(), isCheckIn: true, managerInfo: manager });
+    res.send(result)
+  }
 })
 
 // ------------------------------dailyReport---------------------------------------
-app.get('/dailyReport', async(req, res)=>{
+app.get('/dailyReport', async (req, res) => {
   const info = req.body;
   // const userId = req.body.userId;
   // const projectId = req.body.projectId;
@@ -69,18 +66,18 @@ app.get('/dailyReport', async(req, res)=>{
   const projectId = 807;
   console.log(userId, projectId);
 
-  const user = await userCollection.findOne({ ID : userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
-  const project = await projectCollection.findOne({ Project_id : projectId } , { Project_id: 1, Project_Name: 1,  _id: 0 });
+  const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
+  const project = await projectCollection.findOne({ Project_id: projectId }, { Project_id: 1, Project_Name: 1, _id: 0 });
 
   const weatherInfo = await axios.get('https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=e207b65ba744eac979f0272996cbfa4d');
-  const currentWaither = {weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main};
+  const currentWaither = { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main };
 
   const dailyReport = {
     job_name: project.Project_Name,
     job_id: project.Project_id,
     employee_name: user.First_Name + user.Last_Name_and_Suffix,
     date: new Date,
-    weather_condition: {weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main},
+    weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },
     activity: 'PlaceholderActivity',
     manpower: {
       employee: 'PlaceholderEmployee',
@@ -99,72 +96,72 @@ app.get('/dailyReport', async(req, res)=>{
       isInjured: 'PlaceholderIsInjured',
     },
   };
-  
+
   console.log(dailyReport)
   res.send(dailyReport);
 })
 
-app.get('/users', async(req, res)=>{
+app.get('/users', async (req, res) => {
   const result = await userCollection.find();
   res.send(result);
 })
 
-app.get('/aboutUs', async(req, res)=>{
+app.get('/aboutUs', async (req, res) => {
   const result = await companyInfo.find();
   res.send(result);
 })
 
-app.get('/currentUser', async (req, res)=>{
+app.get('/currentUser', async (req, res) => {
   const pin = req.query.pin;
   const pinInt = parseInt(pin);
   console.log(pinInt)
-  const result = await userCollection.find({ Pin : pinInt})
+  const result = await userCollection.find({ Pin: pinInt })
   res.send(result);
 })
 
 // -------------------------------------projectBaseContract--------------------------------------
-app.get('/contract', async (req, res)=>{
+app.get('/contract', async (req, res) => {
   const id = req.query.projectId;
   const idInt = parseInt(id);
   console.log(idInt)
-  const result = await contractCollection.find({ Project_id : idInt });
+  const result = await contractCollection.find({ Project_id: idInt });
   console.log(result)
   res.send(result);
 })
 
 // ------------------------------project----------------------------------
-app.get('/projects', async (req, res)=>{
-  const result = await projectCollection.find({ status: 'Active'});
+app.get('/projects', async (req, res) => {
+  const result = await projectCollection.find({ status: 'Active' });
   // const result = await surveyCollection.find({ surveyor: email })
   res.send(result);
 })
 
 // ------------------------------checkAdmin-------------------------------------
-app.get('/isAdmin', async (req, res)=>{
+app.get('/isAdmin', async (req, res) => {
   const email = req.query.email;
   const password = req.query.password;
   console.log(email, password)
   const isExists = await adminCollection.findOne({ email_address: email, password: password, Role: 'Admin' })
   console.log(isExists)
-  if(isExists){
+  if (isExists) {
     return res.send(isExists)
   }
-  else{
-    return res.status(402).send({message: 'Unauthorize access'})
+  else {
+    return res.status(402).send({ message: 'Unauthorize access' })
   }
 })
 
-app.get('/isManager', async (req, res)=>{
+app.get('/isManager', async (req, res) => {
   const email = req.query.email;
   const password = req.query.password;
   console.log(email, password)
   const isExists = await adminCollection.findOne({ email_address: email, password: password, Role: 'Manager' })
   console.log(isExists)
-  if(isExists){
+  if (isExists) {
     return res.send(isExists)
   }
-  else{
-    return res.status(402).send({message: 'Unauthorize access'})
+  else {
+    return res.status(402).send({ message: 'Unauthorize access' })
   }
 })
 
