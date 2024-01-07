@@ -32,9 +32,34 @@ const adminCollection = mongoose.model('UserRole', new mongoose.Schema({}, { str
 const dailyReportCollection = mongoose.model('dailyReport', new mongoose.Schema({}, { strict: false }));
 const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.Schema({}, { strict: false }));
 
+// const dailyReportSchema = {
+//   job_name: project.Project_Name,
+//   job_id: project.Project_id,
+//   employee_name: user.First_Name + ' ' + user.Last_Name_and_Suffix,
+//   date: new Date,
+//   weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },
+//   activity: 'PlaceholderActivity',
+//   manpower: {
+//     employee: 'PlaceholderEmployee',
+//     hours: 'PlaceholderHours',
+//     injured: 'PlaceholderInjured',
+//   },
+//   rental: 'PlaceholderRental',
+//   isInjury: false,
+//   injury_img: 'PlaceholderInjuryImage',
+//   progress_img: 'PlaceholderProgressImage',
+//   eod_img: 'PlaceholderEODImage',
+//   receipt_img: 'PlaceholderReceiptImage',
+//   checkOut_question: {
+//     take_break: 'PlaceholderTakeBreak',
+//     take_lunch: 'PlaceholderTakeLunch',
+//     isInjured: 'PlaceholderIsInjured',
+//   },
+// };
+
 // --------------------------dailyWorkingBaseProject----------------------------------
 
-app.get('/dailyRunningProject', async (req, res) => {
+app.get('/checkedInProject', async (req, res) => {
   const result = await dailyRunningProject.find();
   res.send(result);
 })
@@ -58,47 +83,58 @@ app.post('/checkIn', async (req, res) => {
 })
 
 // ------------------------------dailyReport---------------------------------------
-app.get('/dailyReport', async (req, res) => {
-  const info = req.body;
-  // const userId = req.body.userId;
-  // const projectId = req.body.projectId;
-  const userId = 27;
-  const projectId = 807;
-  console.log(userId, projectId);
+app.post('/dailyReport', async (req, res) => {
+  const userId = parseInt(req.query.userId);
+  const projectId = parseInt(req.query.projectId);
+  const { role } = req.query;
+  const { activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, workingUnderManagerId } = req.body;
+  const dateObj = new Date();
+  const dateString = dateObj.toISOString();
+  const todayDate = dateString.substring(0, 10);
+  console.log(userId, projectId, role, activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, todayDate);
 
-  const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
   const project = await projectCollection.findOne({ Project_id: projectId }, { Project_id: 1, Project_Name: 1, _id: 0 });
-
   const weatherInfo = await axios.get('https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=e207b65ba744eac979f0272996cbfa4d');
   const currentWaither = { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main };
 
-  const dailyReport = {
-    job_name: project.Project_Name,
-    job_id: project.Project_id,
-    employee_name: user.First_Name + user.Last_Name_and_Suffix,
-    date: new Date,
-    weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },
-    activity: 'PlaceholderActivity',
-    manpower: {
-      employee: 'PlaceholderEmployee',
-      hours: 'PlaceholderHours',
-      injured: 'PlaceholderInjured',
-    },
-    rental: 'PlaceholderRental',
-    isInjury: false,
-    injury_img: 'PlaceholderInjuryImage',
-    progress_img: 'PlaceholderProgressImage',
-    eod_img: 'PlaceholderEODImage',
-    receipt_img: 'PlaceholderReceiptImage',
-    checkOut_question: {
-      take_break: 'PlaceholderTakeBreak',
-      take_lunch: 'PlaceholderTakeLunch',
-      isInjured: 'PlaceholderIsInjured',
-    },
-  };
+  if (role === 'user') {
+    const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
 
-  console.log(dailyReport)
-  res.send(dailyReport);
+    const dailyReport = {
+      job_name: project.Project_Name,
+      job_id: project.Project_id,
+      employee_name: user.First_Name + ' ' + user.Last_Name_and_Suffix,
+      workingUnderManagerId: workingUnderManagerId,
+      date: new Date,
+      weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },
+      activity: activity,
+      rental: rental,
+      isInjury: isInjury,
+      injury_img: injury_img,
+      progress_img: progress_img,
+      eod_img: eod_img,
+      receipt_img: receipt_img,
+    };
+
+    const todayCollection = await dailyReportCollection.findOne({ Date: date });
+
+    if (todayCollection) {
+      const update = await dailyReportCollection.updateOne(
+        { Date: date },
+        {
+          $push: { dailyReport: dailyReport },
+        },
+      );
+      return res.send(update);
+    }
+    else {
+      const create = await dailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReport] })
+      return res.send(create);
+    }
+  }
+  else {
+    res.send('manager comming soon');
+  }
 })
 
 app.get('/users', async (req, res) => {
