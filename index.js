@@ -30,7 +30,7 @@ const projectCollection = mongoose.model('project', new mongoose.Schema({}, { st
 const companyInfo = mongoose.model('aboutUs', new mongoose.Schema({}, { strict: false }));
 const adminCollection = mongoose.model('UserRole', new mongoose.Schema({}, { strict: false }));
 const dailyReportCollection = mongoose.model('dailyReport', new mongoose.Schema({}, { strict: false }));
-const dailyReportForManager = mongoose.model('managerDailyReport', new mongoose.Schema({}, { strict: false }));
+const managerDailyReportCollection = mongoose.model('managerDailyReport', new mongoose.Schema({}, { strict: false }));
 const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.Schema({}, { strict: false }));
 
 // const dailyReportSchema = {
@@ -135,7 +135,7 @@ app.post('/dailyReport', async (req, res) => {
   }
   else {
     const manager = await adminCollection.findOne({ ID : userId });
-    
+
     const dailyReportForManager = {
       job_name: project.Project_Name,
       job_id: project.Project_id,
@@ -156,10 +156,10 @@ app.post('/dailyReport', async (req, res) => {
       receipt_img: receipt_img
     };
 
-    const todayCollection = await dailyReportForManager.findOne({ Date: date });
+    const todayCollection = await managerDailyReportCollection.findOne({ Date: date });
 
     if (todayCollection) {
-      const update = await dailyReportForManager.updateOne(
+      const update = await managerDailyReportCollection.updateOne(
         { Date: date },
         {
           $push: { dailyReport: dailyReportForManager },
@@ -168,7 +168,7 @@ app.post('/dailyReport', async (req, res) => {
       return res.send(update);
     }
     else {
-      const create = await dailyReportForManager.create({ Date: todayDate, dailyReport: [dailyReportForManager] })
+      const create = await managerDailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReportForManager] })
       return res.send(create);
     }
 
