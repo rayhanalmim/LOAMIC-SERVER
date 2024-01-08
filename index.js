@@ -146,7 +146,6 @@ app.get('/aboutUs', async (req, res) => {
   const result = await companyInfo.find();
   res.send(result);
 })
-
 app.get('/currentUser', async (req, res) => {
   const pin = req.query.pin;
   const pinInt = parseInt(pin);
