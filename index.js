@@ -30,6 +30,7 @@ const projectCollection = mongoose.model('project', new mongoose.Schema({}, { st
 const companyInfo = mongoose.model('aboutUs', new mongoose.Schema({}, { strict: false }));
 const adminCollection = mongoose.model('UserRole', new mongoose.Schema({}, { strict: false }));
 const dailyReportCollection = mongoose.model('dailyReport', new mongoose.Schema({}, { strict: false }));
+const dailyReportForManager = mongoose.model('managerDailyReport', new mongoose.Schema({}, { strict: false }));
 const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.Schema({}, { strict: false }));
 
 // const dailyReportSchema = {
@@ -87,7 +88,7 @@ app.post('/dailyReport', async (req, res) => {
   const userId = parseInt(req.query.userId);
   const projectId = parseInt(req.query.projectId);
   const { role } = req.query;
-  const { activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, workingUnderManagerId } = req.body;
+  const { activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, workingUnderManagerId, employee, hours, injured } = req.body;
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
   const todayDate = dateString.substring(0, 10);
@@ -133,7 +134,44 @@ app.post('/dailyReport', async (req, res) => {
     }
   }
   else {
-    res.send('manager comming soon');
+    const manager = await adminCollection.findOne({ ID : userId });
+    
+    const dailyReportForManager = {
+      job_name: project.Project_Name,
+      job_id: project.Project_id,
+      employee_name: manager.First_Name + ' ' + manager.Last_Name_and_Suffix,
+      date: new Date,
+      weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },
+      activity: activity,
+      manpower: {
+        employee: employee,
+        hours: hours,
+        injured: injured,
+      },
+      rental: rental,
+      isInjury: false,
+      injury_img: injury_img,
+      progress_img: progress_img,
+      eod_img: eod_img,
+      receipt_img: receipt_img
+    };
+
+    const todayCollection = await dailyReportForManager.findOne({ Date: date });
+
+    if (todayCollection) {
+      const update = await dailyReportForManager.updateOne(
+        { Date: date },
+        {
+          $push: { dailyReport: dailyReportForManager },
+        },
+      );
+      return res.send(update);
+    }
+    else {
+      const create = await dailyReportForManager.create({ Date: todayDate, dailyReport: [dailyReportForManager] })
+      return res.send(create);
+    }
+
   }
 })
 
@@ -146,6 +184,7 @@ app.get('/aboutUs', async (req, res) => {
   const result = await companyInfo.find();
   res.send(result);
 })
+
 app.get('/currentUser', async (req, res) => {
   const pin = req.query.pin;
   const pinInt = parseInt(pin);
