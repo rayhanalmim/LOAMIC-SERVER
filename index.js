@@ -59,6 +59,7 @@ const timeCollection = mongoose.model('timeDemo', new mongoose.Schema({}, { stri
 //   },
 // };
 
+
 // --------------------------dailyWorkingBaseProject----------------------------------
 
 app.get('/checkedInProject', async (req, res) => {
@@ -83,14 +84,22 @@ app.post('/checkIn', async (req, res) => {
   const managerID = req.query.managerId;
   const projectIdInt = parseInt(id)
   const managerIdInt = parseInt(managerID)
+
+  const weatherInfo = await axios.get('https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=e207b65ba744eac979f0272996cbfa4d');
+
   const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1 });
   const manager = await adminCollection.findOne({ ID: managerIdInt }, { ID: 1, Employee_First_Name: 1, Employee_Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
+
   const isExist = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt })
   if (isExist) {
     return res.send({ massege: 'this project already listed in current project collection' })
   }
   else {
-    const result = await dailyRunningProject.create({ project, checkInDate: new Date(), isCheckIn: true, managerInfo: manager });
+    const result = await dailyRunningProject.create({ project, checkInDate: new Date(), isCheckIn: true, managerInfo: manager,  weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },  manpower: {
+      employee: 'employee',
+      hours: 'hours',
+      injured: 'injured',
+    } });
     res.send(result)
   }
 })
@@ -257,6 +266,26 @@ app.get('/isManager', async (req, res) => {
   else {
     return res.status(402).send({ message: 'Unauthorize access' })
   }
+})
+
+// -----------------------------------adminCRUD-----------------------------------------------
+
+app.post('/addProject', async(req, res)=>{
+  const project = req.body;
+  const result = await projectCollection.create(project);
+  res.send(result);
+})
+
+app.post('/addEmployee', async(req, res)=>{
+  const employee = req.body;
+  const result = await userCollection.create(employee);
+  res.send(result);
+})
+
+app.post('/addContract', async(req, res)=>{
+  const contract = req.body;
+  const result = await contractCollection.create(contract);
+  res.send(result);
 })
 
 // --------------------------------------localApi-------------------------------------------
