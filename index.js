@@ -32,6 +32,7 @@ const adminCollection = mongoose.model('UserRole', new mongoose.Schema({}, { str
 const dailyReportCollection = mongoose.model('dailyReport', new mongoose.Schema({}, { strict: false }));
 const managerDailyReportCollection = mongoose.model('managerDailyReport', new mongoose.Schema({}, { strict: false }));
 const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.Schema({}, { strict: false }));
+const timeCollection = mongoose.model('timeDemo', new mongoose.Schema({}, { strict: false }));
 
 // const dailyReportSchema = {
 //   job_name: project.Project_Name,
@@ -65,6 +66,17 @@ app.get('/checkedInProject', async (req, res) => {
   res.send(result);
 })
 
+app.get('/managerCheckIn', async(req, res)=>{
+  const managerID = parseInt(req.query.managerId);
+  const result = await dailyRunningProject.findOne({ 'managerInfo.ID' : managerID })
+  if(result){
+    return res.send(result)
+  }
+  else{
+    res.send({message: 'project not found'});
+  }
+})
+
 // -------------------------------------------------------checkIn-----------------------------------------------
 app.post('/checkIn', async (req, res) => {
   const id = req.query.projectId;
@@ -81,6 +93,14 @@ app.post('/checkIn', async (req, res) => {
     const result = await dailyRunningProject.create({ project, checkInDate: new Date(), isCheckIn: true, managerInfo: manager });
     res.send(result)
   }
+})
+
+app.post('/timeDemo', async(req, res)=>{
+  const time = req.body;
+  console.log(time)
+  const result = await timeCollection.create(time);
+  console.log(result)
+  res.send(result)
 })
 
 // ------------------------------dailyReport---------------------------------------
