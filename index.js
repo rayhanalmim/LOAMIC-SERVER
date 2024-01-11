@@ -85,6 +85,11 @@ app.post('/checkIn', async (req, res) => {
   const projectIdInt = parseInt(req.query.projectId);
   const userIdInt = parseInt(req.query.userId);
   const role = req.query.role;
+  const dateObj = new Date();
+  console.log(dateObj)
+  const dateString = dateObj.toISOString();
+  const todayDate = dateString.substring(0, 10);
+  const currentTime = dateString.substring(11, 16);
 
   const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1 });
   const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=${process.env.SECRETKEY}`);
@@ -108,19 +113,29 @@ app.post('/checkIn', async (req, res) => {
       return res.send(result)
     }
   }
-  else if(role === 'user'){
-    const employee = await userCollection.findOne({ ID: userIdInt }, { ID: 1, First_Name : 1, Last_Name_and_Suffix : 1, Role: 1, _id: 0 });
-    
-  }
-  res.send({message: 'error! required query: "projectId" , "userId" , "role" ["role" should be "manager" or "user"]'})
-})
+  else if (role === 'user') {
+    const employee = await userCollection.findOne({ ID: userIdInt }, { ID: 1, First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
+    const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
-app.post('/timeDemo', async (req, res) => {
-  const time = req.body;
-  console.log(time)
-  const result = await timeCollection.create(time);
-  console.log(result)
-  res.send(result)
+    if (!isExists) {
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, projectId: project.Project_id, ClockInTime: currentTime, clockOutTime: 'on the way' }] })
+      return res.send(result)
+    } else {
+      const isCheckedIn = await clockInCollection.findOne({ ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
+      if(isCheckedIn){
+        return res.send({message: 'user already check in today'})
+      }else{
+        const update = await clockInCollection.updateOne(
+          { ClockInDetails: { $elemMatch: { currentDate: todayDate } } },
+          {
+            $push: { ClockInDetails: { currentDate: todayDate, projectId: project.Project_id, ClockInTime: currentTime, clockOutTime: 'on the way' } },
+          },
+        );
+        return res.send(update);
+      }
+    }
+  }
+  res.send({ message: 'error! required query: "projectId" , "userId" , "role" ["role" should be "manager" or "user"]' })
 })
 
 // ------------------------------dailyReport---------------------------------------
