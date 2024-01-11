@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const app = express();
 const port = process.env.PORT || 5000;
 const axios = require('axios');
+require('dotenv').config()
 
 app.use(cors())
 app.use(express.json())
@@ -33,6 +34,7 @@ const dailyReportCollection = mongoose.model('dailyReport', new mongoose.Schema(
 const managerDailyReportCollection = mongoose.model('managerDailyReport', new mongoose.Schema({}, { strict: false }));
 const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.Schema({}, { strict: false }));
 const timeCollection = mongoose.model('timeDemo', new mongoose.Schema({}, { strict: false }));
+const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 
 // const dailyReportSchema = {
 //   job_name: project.Project_Name,
@@ -67,45 +69,53 @@ app.get('/checkedInProject', async (req, res) => {
   res.send(result);
 })
 
-app.get('/managerCheckIn', async(req, res)=>{
+app.get('/managerCheckIn', async (req, res) => {
   const managerID = parseInt(req.query.managerId);
-  const result = await dailyRunningProject.findOne({ 'managerInfo.ID' : managerID })
-  if(result){
+  const result = await dailyRunningProject.findOne({ 'managerInfo.ID': managerID })
+  if (result) {
     return res.send(result)
   }
-  else{
-    res.send({message: 'project not found'});
+  else {
+    res.send({ message: 'project not found' });
   }
 })
 
 // -------------------------------------------------------checkIn-----------------------------------------------
 app.post('/checkIn', async (req, res) => {
-  const id = req.query.projectId;
-  const managerID = req.query.managerId;
-  const projectIdInt = parseInt(id)
-  const managerIdInt = parseInt(managerID)
-
-  const weatherInfo = await axios.get('https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=e207b65ba744eac979f0272996cbfa4d');
+  const projectIdInt = parseInt(req.query.projectId);
+  const userIdInt = parseInt(req.query.userId);
+  const role = req.query.role;
 
   const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1 });
-  const manager = await adminCollection.findOne({ ID: managerIdInt }, { ID: 1, Employee_First_Name: 1, Employee_Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
+  const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=${process.env.SECRETKEY}`);
 
-  const isExist = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt })
-  console.log(isExist);
-  if (isExist) {
-    return res.send({ massege: 'this project already listed in running project collection' })
+  if (role === 'manager') {
+    const manager = await adminCollection.findOne({ ID: userIdInt }, { ID: 1, Employee_First_Name: 1, Employee_Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
+
+    const isExist = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt })
+    console.log(isExist);
+    if (isExist) {
+      return res.send({ massege: 'this project already listed in running project collection' })
+    }
+    else {
+      const result = await dailyRunningProject.create({
+        project, checkInDate: new Date(), isCheckIn: true, managerInfo: manager, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main }, manpower: {
+          employee: 'employee',
+          hours: 'hours',
+          injured: 'injured',
+        }
+      });
+      return res.send(result)
+    }
   }
-  else {
-    const result = await dailyRunningProject.create({ project, checkInDate: new Date(), isCheckIn: true, managerInfo: manager,  weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },  manpower: {
-      employee: 'employee',
-      hours: 'hours',
-      injured: 'injured',
-    } });
-    res.send(result)
+  else if(role === 'user'){
+    const employee = await userCollection.findOne({ ID: userIdInt }, { ID: 1, First_Name : 1, Last_Name_and_Suffix : 1, Role: 1, _id: 0 });
+    
   }
+  res.send({message: 'error! required query: "projectId" , "userId" , "role" ["role" should be "manager" or "user"]'})
 })
 
-app.post('/timeDemo', async(req, res)=>{
+app.post('/timeDemo', async (req, res) => {
   const time = req.body;
   console.log(time)
   const result = await timeCollection.create(time);
@@ -125,7 +135,7 @@ app.post('/dailyReport', async (req, res) => {
   console.log(userId, projectId, role, activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, todayDate);
 
   const project = await projectCollection.findOne({ Project_id: projectId }, { Project_id: 1, Project_Name: 1, _id: 0 });
-  const weatherInfo = await axios.get('https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=e207b65ba744eac979f0272996cbfa4d');
+  const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=${process.env.SECRETKEY}`);
   const currentWaither = { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main };
 
   if (role === 'user') {
@@ -165,7 +175,7 @@ app.post('/dailyReport', async (req, res) => {
     }
   }
   else {
-    const manager = await adminCollection.findOne({ ID : userId });
+    const manager = await adminCollection.findOne({ ID: userId });
 
     const dailyReportForManager = {
       job_name: project.Project_Name,
@@ -202,7 +212,6 @@ app.post('/dailyReport', async (req, res) => {
       const create = await managerDailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReportForManager] })
       return res.send(create);
     }
-
   }
 })
 
@@ -273,15 +282,15 @@ app.get('/isManager', async (req, res) => {
 
 // -----------------------------------adminCRUD-----------------------------------------------
 
-app.post('/addProject', async(req, res)=>{
+app.post('/addProject', async (req, res) => {
   const project = req.body;
   const result = await projectCollection.create(project);
   res.send(result);
 })
 
-app.post('/updateProject', async(req, res)=>{
+app.post('/updateProject', async (req, res) => {
   const projectID = parseInt(req.query.projectId);
-  const {Project_id, status, Project_Name, Awarding_Body, Client, Project, Street, City, County, State, Zip, Contract_value, Project_Intro, Project_Duration, Project_Start_Date, Project_Complete_Date, Project_Category, Project_Type, cover_image_url, img_1_url, img_2_url, img_3_url, img_4_url, img_5_url, img_6_url, img_7_url, img_8_url, video_1_url, video_2_url } = req.body;
+  const { Project_id, status, Project_Name, Awarding_Body, Client, Project, Street, City, County, State, Zip, Contract_value, Project_Intro, Project_Duration, Project_Start_Date, Project_Complete_Date, Project_Category, Project_Type, cover_image_url, img_1_url, img_2_url, img_3_url, img_4_url, img_5_url, img_6_url, img_7_url, img_8_url, video_1_url, video_2_url } = req.body;
 
   const result = await projectCollection.updateOne(
     { Project_id: projectID },
@@ -291,13 +300,13 @@ app.post('/updateProject', async(req, res)=>{
 })
 
 // ----------------------------------employeeSection--------------------------------------
-app.post('/addEmployee', async(req, res)=>{
+app.post('/addEmployee', async (req, res) => {
   const employee = req.body;
   const result = await adminCollection.create(employee);
   res.send(result);
 })
 
-app.post('/updateEmployee', async(req, res)=>{
+app.post('/updateEmployee', async (req, res) => {
   const employeeID = parseInt(req.query.employeeId);
   const { Employee_Last_Name_and_Suffix, Employee_First_Name, Employee_Status, Role, email_address, password } = req.body;
   console.log(req.body)
@@ -310,16 +319,16 @@ app.post('/updateEmployee', async(req, res)=>{
 })
 
 // -------------------------------------ContractPage---------------------------------------------
-app.post('/addContract', async(req, res)=>{
+app.post('/addContract', async (req, res) => {
   const contract = req.body;
   const result = await contractCollection.create(contract);
   res.send(result);
 })
 
-app.post('/updateContract', async(req, res)=>{
+app.post('/updateContract', async (req, res) => {
   const contractID = parseInt(req.query.contractId);
   const { Project_id, Name, Title, email, Company, Phone_number } = req.body;
- 
+
   const result = await contractCollection.updateOne(
     { _id: new Object(contractID) },
     { $set: { Project_id: Project_id, Name: Name, Title: Title, email: email, Company: Company, Phone_number: Phone_number } },
