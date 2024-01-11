@@ -91,8 +91,9 @@ app.post('/checkIn', async (req, res) => {
   const manager = await adminCollection.findOne({ ID: managerIdInt }, { ID: 1, Employee_First_Name: 1, Employee_Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
 
   const isExist = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt })
+  console.log(isExist);
   if (isExist) {
-    return res.send({ massege: 'this project already listed in current project collection' })
+    return res.send({ massege: 'this project already listed in running project collection' })
   }
   else {
     const result = await dailyRunningProject.create({ project, checkInDate: new Date(), isCheckIn: true, managerInfo: manager,  weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },  manpower: {
@@ -116,7 +117,7 @@ app.post('/timeDemo', async(req, res)=>{
 app.post('/dailyReport', async (req, res) => {
   const userId = parseInt(req.query.userId);
   const projectId = parseInt(req.query.projectId);
-  const { role } = req.query;
+  const { role } = req.body;
   const { activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, workingUnderManagerId, employee, hours, injured } = req.body;
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
@@ -129,6 +130,7 @@ app.post('/dailyReport', async (req, res) => {
 
   if (role === 'user') {
     const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
+    console.log(user);
 
     const dailyReport = {
       job_name: project.Project_Name,
@@ -146,11 +148,11 @@ app.post('/dailyReport', async (req, res) => {
       receipt_img: receipt_img,
     };
 
-    const todayCollection = await dailyReportCollection.findOne({ Date: date });
+    const todayCollection = await dailyReportCollection.findOne({ Date: todayDate });
 
     if (todayCollection) {
       const update = await dailyReportCollection.updateOne(
-        { Date: date },
+        { Date: todayDate },
         {
           $push: { dailyReport: dailyReport },
         },
