@@ -319,7 +319,7 @@ app.post('/updateContract', async(req, res)=>{
   const { Project_id, Name, Title, email, Company, Phone_number } = req.body;
  
   const result = await contractCollection.updateOne(
-    { _id: new Object(id) },
+    { _id: new Object(contractID) },
     { $set: { Project_id: Project_id, Name: Name, Title: Title, email: email, Company: Company, Phone_number: Phone_number } },
   );
   res.send(result);
