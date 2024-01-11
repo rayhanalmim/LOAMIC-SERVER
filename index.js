@@ -306,9 +306,21 @@ app.post('/updateEmployee', async(req, res)=>{
   res.send(result);
 })
 
+// -------------------------------------ContractPage---------------------------------------------
 app.post('/addContract', async(req, res)=>{
   const contract = req.body;
   const result = await contractCollection.create(contract);
+  res.send(result);
+})
+
+app.post('/updateContract', async(req, res)=>{
+  const contractID = parseInt(req.query.contractId);
+  const { Project_id, Name, Title, email, Company, Phone_number } = req.body;
+ 
+  const result = await contractCollection.updateOne(
+    { _id: new Object(id) },
+    { $set: { Project_id: Project_id, Name: Name, Title: Title, email: email, Company: Company, Phone_number: Phone_number } },
+  );
   res.send(result);
 })
 
