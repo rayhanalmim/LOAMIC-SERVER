@@ -61,9 +61,7 @@ const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schem
 //   },
 // };
 
-
 // --------------------------dailyWorkingBaseProject----------------------------------
-
 app.get('/checkedInProject', async (req, res) => {
   const result = await dailyRunningProject.find();
   res.send(result);
@@ -122,9 +120,9 @@ app.post('/checkIn', async (req, res) => {
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
-      if(isCheckedIn){
-        return res.send({message: 'user already check in today'})
-      }else{
+      if (isCheckedIn) {
+        return res.send({ message: 'user already check in today' })
+      } else {
         const update = await clockInCollection.updateOne(
           { ClockInDetails: { $elemMatch: { currentDate: todayDate } } },
           {
