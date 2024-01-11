@@ -277,6 +277,17 @@ app.post('/addProject', async(req, res)=>{
   res.send(result);
 })
 
+app.post('/updateProject', async(req, res)=>{
+  const projectID = parseInt(req.query.projectId);
+  const {Project_id, status, Project_Name, Awarding_Body, Client, Project, Street, City, County, State, Zip, Contract_value, Project_Intro, Project_Duration, Project_Start_Date, Project_Complete_Date, Project_Category, Project_Type, cover_image_url, img_1_url, img_2_url, img_3_url, img_4_url, img_5_url, img_6_url, img_7_url, img_8_url, video_1_url, video_2_url } = req.body;
+
+  const result = await projectCollection.updateOne(
+    { Project_id: projectID },
+    { $set: { Project_id: Project_id, status: status, Project_Name: Project_Name, Awarding_Body: Awarding_Body, Client: Client, Project: Project, Street: Street, City: City, County: County, State: State, Zip: Zip } },
+  );
+  res.send(result);
+})
+
 app.post('/addEmployee', async(req, res)=>{
   const employee = req.body;
   const result = await userCollection.create(employee);
