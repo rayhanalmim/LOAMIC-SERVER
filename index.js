@@ -288,9 +288,21 @@ app.post('/updateProject', async(req, res)=>{
   res.send(result);
 })
 
+// ----------------------------------employeeSection--------------------------------------
 app.post('/addEmployee', async(req, res)=>{
   const employee = req.body;
   const result = await userCollection.create(employee);
+  res.send(result);
+})
+
+app.post('/updateEmployee', async(req, res)=>{
+  const employeeID = parseInt(req.query.employeeId);
+  const { Employee_Last_Name_and_Suffix, Employee_First_Name, Employee_Status, Role, email_address, password } = req.body;
+
+  const result = await userCollection.updateOne(
+    { ID: employeeID },
+    { $set: { Employee_Last_Name_and_Suffix: Employee_Last_Name_and_Suffix, Employee_First_Name: Employee_First_Name, Employee_Status: Employee_Status, Role: Role, email_address: email_address, password: password } },
+  );
   res.send(result);
 })
 
