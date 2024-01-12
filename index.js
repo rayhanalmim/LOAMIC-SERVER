@@ -62,7 +62,7 @@ const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schem
 // };
 
 // --------------------------dailyWorkingBaseProject----------------------------------
-app.get('/checkedInProject', async (req, res) => {
+app.get('/avalableProjectForEmployee', async (req, res) => {
   const result = await dailyRunningProject.find();
   res.send(result);
 })
