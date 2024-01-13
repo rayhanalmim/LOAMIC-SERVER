@@ -119,12 +119,12 @@ app.post('/checkIn', async (req, res) => {
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
-      conslole.log(isCheckedIn)
+      console.log(isCheckedIn)
       if (isCheckedIn) {
         return res.send({ message: 'user already check in today' })
       } else {
         const update = await clockInCollection.updateOne(
-          { ClockInDetails: { $elemMatch: { currentDate: todayDate } } },
+          { ID: userIdInt },
           {
             $push: { ClockInDetails: { currentDate: todayDate, projectId: project.Project_id, ClockInTime: currentTime, clockOutTime: 'on the way' } },
           },
