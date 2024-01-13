@@ -35,30 +35,6 @@ const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.S
 const timeCollection = mongoose.model('timeDemo', new mongoose.Schema({}, { strict: false }));
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 
-// const dailyReportSchema = {
-//   job_name: project.Project_Name,
-//   job_id: project.Project_id,
-//   employee_name: user.First_Name + ' ' + user.Last_Name_and_Suffix,
-//   date: new Date,
-//   weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },
-//   activity: 'PlaceholderActivity',
-//   manpower: {
-//     employee: 'PlaceholderEmployee',
-//     hours: 'PlaceholderHours',
-//     injured: 'PlaceholderInjured',
-//   },
-//   rental: 'PlaceholderRental',
-//   isInjury: false,
-//   injury_img: 'PlaceholderInjuryImage',
-//   progress_img: 'PlaceholderProgressImage',
-//   eod_img: 'PlaceholderEODImage',
-//   receipt_img: 'PlaceholderReceiptImage',
-//   checkOut_question: {
-//     take_break: 'PlaceholderTakeBreak',
-//     take_lunch: 'PlaceholderTakeLunch',
-//     isInjured: 'PlaceholderIsInjured',
-//   },
-// };
 
 // -------------------------------------------employeeClockInCard------------------------------------
 
