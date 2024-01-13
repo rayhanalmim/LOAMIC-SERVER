@@ -22,7 +22,6 @@ db.on('error', (err) => {
 
 db.once('open', () => {
   console.log('Connected to MongoDB');
-
 });
 
 const userCollection = mongoose.model('users', new mongoose.Schema({}, { strict: false }));
@@ -102,7 +101,7 @@ app.post('/checkIn', async (req, res) => {
     }
     else {
       const result = await dailyRunningProject.create({
-        project, checkInDate: new Date(), isCheckIn: true, managerInfo: manager, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main }, manpower: {
+        project, checkInDate: todayDate, checkInTime: currentTime , isCheckIn: true, managerInfo: manager, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main }, manpower: {
           employee: 'employee',
           hours: 'hours',
           injured: 'injured',
@@ -120,6 +119,7 @@ app.post('/checkIn', async (req, res) => {
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
+      conslole.log(isCheckedIn)
       if (isCheckedIn) {
         return res.send({ message: 'user already check in today' })
       } else {
