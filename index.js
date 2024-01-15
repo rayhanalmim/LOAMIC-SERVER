@@ -16,6 +16,12 @@ mongoose.connect(uri, {
 
 const db = mongoose.connection;
 
+// -----------------------------TODO----------------------------
+// 1. have implement manpower section data 
+// 2. convert farenheight to cel 
+// 3. have to implement checkout part daynamic 
+// 4. have to implement daily report
+
 db.on('error', (err) => {
   console.error(`Error connecting to MongoDB: ${err}`);
 });
@@ -77,13 +83,13 @@ app.post('/checkIn', async (req, res) => {
   const todayDate = dateString.substring(0, 10);
   const currentTime = dateString.substring(11, 16);
 
-  const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1 });
+  const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1, cover_image_url: 1 });
   const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=${process.env.SECRETKEY}`);
 
   if (role === 'manager') {
     const manager = await adminCollection.findOne({ ID: userIdInt }, { ID: 1, Employee_First_Name: 1, Employee_Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
 
-    const isExist = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt })
+    const isExist = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt });
     console.log(isExist);
     if (isExist) {
       return res.send({ massege: 'this project already listed in running project collection' })
@@ -311,7 +317,7 @@ app.post('/addEmployee', async (req, res) => {
 app.post('/updateEmployee', async (req, res) => {
   const employeeID = parseInt(req.query.employeeId);
   const { Employee_Last_Name_and_Suffix, Employee_First_Name, Employee_Status, Role, email_address, password } = req.body;
-  console.log(req.body)
+  console.log(req.body);
 
   const result = await adminCollection.updateOne(
     { ID: employeeID },
