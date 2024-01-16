@@ -273,7 +273,6 @@ app.get('/isAdmin', async (req, res) => {
   }
 })
 
-
 app.get('/isManager', async (req, res) => {
   const email = req.query.email;
   const password = req.query.password;
