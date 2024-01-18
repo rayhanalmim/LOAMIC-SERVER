@@ -52,7 +52,6 @@ const { v4: uuidv4 } = require('uuid');
 const sourceDossierId = uuidv4();
 const fs = require('fs');
 const imageUrl = 'https://i.ibb.co/j37R1Rh/809-Main.jpg';
-const logoUrl = 'https://i.ibb.co/5kCwCLP/360-F-129890424-d-Q39vs-Ktrao-F7spf-CNZOSLNKOva-YKKZo-prev-ui.png';
 const imageApiUrl = 'https://api.pricehubble.com/api/v1/dossiers/images';
 const logoApiUrl = 'https://api.pricehubble.com/api/v1/dossiers/logos';
 
