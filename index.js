@@ -47,6 +47,47 @@ const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schem
 
 
 // -----------------------tempWork--------------------------------
+const FormData = require('form-data');
+const { v4: uuidv4 } = require('uuid');
+const sourceDossierId = uuidv4();
+const fs = require('fs');
+const imageUrl = 'https://i.ibb.co/j37R1Rh/809-Main.jpg';
+const logoUrl = 'https://i.ibb.co/5kCwCLP/360-F-129890424-d-Q39vs-Ktrao-F7spf-CNZOSLNKOva-YKKZo-prev-ui.png';
+const imageApiUrl = 'https://api.pricehubble.com/api/v1/dossiers/images';
+const logoApiUrl = 'https://api.pricehubble.com/api/v1/dossiers/logos';
+
+const imagePath = './Image/logo.png';
+const imageBuffer = fs.readFileSync(imagePath);
+
+const formData = new FormData();
+formData.append('image', imageBuffer, { filename: 'image.png' });
+
+console.log('Generated sourceDossierId:', sourceDossierId);
+
+app.get('/postImage', async (req, res) => {
+  const result = await axios.post(imageApiUrl, formData, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      ...formData.getHeaders()
+    },
+  })
+  console.log(result);
+  res.send('success');
+})
+
+app.get('/postLogo', async (req, res) => {
+  const result = await axios.post(logoApiUrl, formData, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      ...formData.getHeaders()
+    },
+  })
+  console.log(result);
+  res.send('success');
+})
+
+
+
 const apiUrl = 'https://api.pricehubble.com/api/v1/dossiers';
 const accessToken = '4V8TBDj6Et2T0EJES5OiBnhmRIwcWzQp';
 const requestData = {
@@ -98,14 +139,14 @@ const requestData = {
       "value": "Yes"
     }
   ],
-  "sourceDossierId": "123e4567-e89b-12d3-a456-426614174000",
+  "sourceDossierId": "0ce67fc2-aee1-40c1-87fa-3e5793ae705e",
   "images": [
     {
-      "filename": "633390e8-0455-4520-87ba-3c5c8c234cb3.jpg",
+      "filename": "4d94daa8-ce37-45bd-911c-ef75e863b5d7.jpg",
       "caption": "Front view"
     }
   ],
-  "logo": "b7219677-f4d5-4e99-9d7f-7cf1dee68900.png",
+  "logo": "ba564101-fbec-4160-945d-2812f08675a4.png",
   "roomTourLink": "https://example.com",
   "countryCode": "DE"
 };
@@ -129,8 +170,6 @@ app.get('/postData', async (req, res) => {
   console.log(postResult);
   res.send('success');
 })
-
-
 
 
 // -------------------------------------------employeeClockInCard------------------------------------
