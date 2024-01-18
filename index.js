@@ -21,6 +21,7 @@ const db = mongoose.connection;
 // 2. convert farenheight to cel 
 // 3. have to implement checkout part daynamic 
 // 4. have to implement daily report
+// 5. have to chenge wether api
 
 db.on('error', (err) => {
   console.error(`Error connecting to MongoDB: ${err}`);
@@ -40,6 +41,96 @@ const managerDailyReportCollection = mongoose.model('managerDailyReport', new mo
 const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.Schema({}, { strict: false }));
 const timeCollection = mongoose.model('timeDemo', new mongoose.Schema({}, { strict: false }));
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
+
+
+
+
+
+// -----------------------tempWork--------------------------------
+const apiUrl = 'https://api.pricehubble.com/api/v1/dossiers';
+const accessToken = '4V8TBDj6Et2T0EJES5OiBnhmRIwcWzQp';
+const requestData = {
+  "title": "My dossier",
+  "description": "My description",
+  "dealType": "sale",
+  "property": {
+    "location": {
+      "address": {
+        "postCode": "83714",
+        "city": "miesbach",
+        "street": "marktplatz",
+        "houseNumber": "6"
+      },
+      "coordinates": {
+        "latitude": 47.3968601,
+        "longitude": 8.5153549
+      }
+    },
+    "propertyType": {
+      "code": "house",
+      "subcode": "house_detached"
+    },
+    "buildingYear": 1990,
+    "livingArea": 100.00,
+    "landArea": 900.00,
+    "volume": 900.00,
+    "numberOfRooms": 3,
+    "numberOfBathrooms": 1,
+    "numberOfIndoorParkingSpaces": 0,
+    "numberOfOutdoorParkingSpaces": 0,
+    "hasPool": true,
+    "condition": {
+      "bathrooms": "renovation_needed",
+      "kitchen": "renovation_needed",
+      "flooring": "well_maintained",
+      "windows": "new_or_recently_renovated"
+    },
+    "quality": {
+      "bathrooms": "simple",
+      "kitchen": "normal",
+      "flooring": "high_quality",
+      "windows": "luxury"
+    }
+  },
+  "userDefinedFields": [
+    {
+      "label": "Extra garage",
+      "value": "Yes"
+    }
+  ],
+  "sourceDossierId": "123e4567-e89b-12d3-a456-426614174000",
+  "images": [
+    {
+      "filename": "633390e8-0455-4520-87ba-3c5c8c234cb3.jpg",
+      "caption": "Front view"
+    }
+  ],
+  "logo": "b7219677-f4d5-4e99-9d7f-7cf1dee68900.png",
+  "roomTourLink": "https://example.com",
+  "countryCode": "DE"
+};
+
+app.get('/createToken', async (req, res) => {
+  const result = await axios.post('https://api.pricehubble.com/auth/login/credentials', {
+    "username": "lucasschaut@hotmail.de",
+    "password": "jCHEmfmuPV"
+  });
+  console.log(result);
+  res.send("success");
+})
+
+app.get('/postData', async (req, res) => {
+  const postResult = await axios.post(apiUrl, requestData, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`
+    }
+  });
+  console.log(postResult);
+  res.send('success');
+})
+
+
 
 
 // -------------------------------------------employeeClockInCard------------------------------------
@@ -110,10 +201,10 @@ app.post('/checkIn', async (req, res) => {
     const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
     if (!isExists) {
-      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, projectInfo: {project, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main } }, ClockInTime: currentTime, clockOutTime: 'on the way' }] })
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, projectInfo: { project, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main } }, ClockInTime: currentTime, clockOutTime: 'on the way' }] })
       return res.send(result)
     } else {
-      const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt , ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
+      const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt, ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
       console.log(isCheckedIn)
       if (isCheckedIn) {
         return res.send({ message: 'user already check in today' })
@@ -121,7 +212,7 @@ app.post('/checkIn', async (req, res) => {
         const update = await clockInCollection.updateOne(
           { ID: userIdInt },
           {
-            $push: { ClockInDetails: { currentDate: todayDate, projectInfo: {project, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main }}, ClockInTime: currentTime, clockOutTime: 'on the way' } },
+            $push: { ClockInDetails: { currentDate: todayDate, projectInfo: { project, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main } }, ClockInTime: currentTime, clockOutTime: 'on the way' } },
           },
         );
         return res.send(update);
