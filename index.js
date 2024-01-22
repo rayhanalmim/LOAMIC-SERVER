@@ -43,134 +43,6 @@ const timeCollection = mongoose.model('timeDemo', new mongoose.Schema({}, { stri
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 
 
-
-
-
-// -----------------------tempWork--------------------------------
-const FormData = require('form-data');
-const { v4: uuidv4 } = require('uuid');
-const sourceDossierId = uuidv4();
-const fs = require('fs');
-const imageUrl = 'https://i.ibb.co/j37R1Rh/809-Main.jpg';
-const imageApiUrl = 'https://api.pricehubble.com/api/v1/dossiers/images';
-const logoApiUrl = 'https://api.pricehubble.com/api/v1/dossiers/logos';
-
-const imagePath = './Image/logo.png';
-const imageBuffer = fs.readFileSync(imagePath);
-
-const formData = new FormData();
-formData.append('image', imageBuffer, { filename: 'image.png' });
-
-console.log('Generated sourceDossierId:', sourceDossierId);
-
-app.get('/postImage', async (req, res) => {
-  const result = await axios.post(imageApiUrl, formData, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      ...formData.getHeaders()
-    },
-  })
-  console.log(result);
-  res.send('success');
-})
-
-app.get('/postLogo', async (req, res) => {
-  const result = await axios.post(logoApiUrl, formData, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      ...formData.getHeaders()
-    },
-  })
-  console.log(result);
-  res.send('success');
-})
-
-
-
-const apiUrl = 'https://api.pricehubble.com/api/v1/dossiers';
-const accessToken = '4V8TBDj6Et2T0EJES5OiBnhmRIwcWzQp';
-const requestData = {
-  "title": "My dossier",
-  "description": "My description",
-  "dealType": "sale",
-  "property": {
-    "location": {
-      "address": {
-        "postCode": "83714",
-        "city": "miesbach",
-        "street": "marktplatz",
-        "houseNumber": "6"
-      },
-      "coordinates": {
-        "latitude": 47.3968601,
-        "longitude": 8.5153549
-      }
-    },
-    "propertyType": {
-      "code": "house",
-      "subcode": "house_detached"
-    },
-    "buildingYear": 1990,
-    "livingArea": 100.00,
-    "landArea": 900.00,
-    "volume": 900.00,
-    "numberOfRooms": 3,
-    "numberOfBathrooms": 1,
-    "numberOfIndoorParkingSpaces": 0,
-    "numberOfOutdoorParkingSpaces": 0,
-    "hasPool": true,
-    "condition": {
-      "bathrooms": "renovation_needed",
-      "kitchen": "renovation_needed",
-      "flooring": "well_maintained",
-      "windows": "new_or_recently_renovated"
-    },
-    "quality": {
-      "bathrooms": "simple",
-      "kitchen": "normal",
-      "flooring": "high_quality",
-      "windows": "luxury"
-    }
-  },
-  "userDefinedFields": [
-    {
-      "label": "Extra garage",
-      "value": "Yes"
-    }
-  ],
-  "sourceDossierId": "0ce67fc2-aee1-40c1-87fa-3e5793ae705e",
-  "images": [
-    {
-      "filename": "4d94daa8-ce37-45bd-911c-ef75e863b5d7.jpg",
-      "caption": "Front view"
-    }
-  ],
-  "logo": "ba564101-fbec-4160-945d-2812f08675a4.png",
-  "roomTourLink": "https://example.com",
-  "countryCode": "DE"
-};
-
-app.get('/createToken', async (req, res) => {
-  const result = await axios.post('https://api.pricehubble.com/auth/login/credentials', {
-    "username": "lucasschaut@hotmail.de",
-    "password": "jCHEmfmuPV"
-  });
-  console.log(result);
-  res.send("success");
-})
-
-app.get('/postData', async (req, res) => {
-  const postResult = await axios.post(apiUrl, requestData, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`
-    }
-  });
-  console.log(postResult);
-  res.send('success');
-})
-
-
 // -------------------------------------------employeeClockInCard------------------------------------
 
 app.get('/employeeClockInCard', async (req, res) => {
@@ -212,8 +84,16 @@ app.post('/checkIn', async (req, res) => {
   const todayDate = dateString.substring(0, 10);
   const currentTime = dateString.substring(11, 16);
 
-  const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1, cover_image_url: 1 });
-  const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=${process.env.SECRETKEY}`);
+  const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1, cover_image_url: 1, latitude: 1, longitude: 1 });
+  const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${project.latitude}&lon=${project.longitude}&appid=${process.env.SECRETKEY}`);
+
+  const weaitherCondition = { weaither: weatherInfo.data.weather[0], OtherInfo: {
+    temp: (weatherInfo.data.main.temp - 273.15).toFixed(2), 
+    feels_like: (weatherInfo.data.main.feels_like - 273.15).toFixed(2),
+    temp_min: (weatherInfo.data.main.temp_min - 273.15).toFixed(2),
+    temp_max: (weatherInfo.data.main.temp_max - 273.15).toFixed(2),
+    pressure: weatherInfo.data.main.pressure,
+  } };
 
   if (role === 'manager') {
     const manager = await adminCollection.findOne({ ID: userIdInt }, { ID: 1, Employee_First_Name: 1, Employee_Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
@@ -225,7 +105,7 @@ app.post('/checkIn', async (req, res) => {
     }
     else {
       const result = await dailyRunningProject.create({
-        project, checkInDate: todayDate, checkInTime: currentTime, isCheckIn: true, managerInfo: manager, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main }, manpower: {
+        project, checkInDate: todayDate, checkInTime: currentTime, isCheckIn: true, managerInfo: manager, weaitherCondition , manpower: {
           employee: 'employee',
           hours: 'hours',
           injured: 'injured',
