@@ -39,7 +39,7 @@ const adminCollection = mongoose.model('UserRole', new mongoose.Schema({}, { str
 const dailyReportCollection = mongoose.model('dailyReport', new mongoose.Schema({}, { strict: false }));
 const managerDailyReportCollection = mongoose.model('managerDailyReport', new mongoose.Schema({}, { strict: false }));
 const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.Schema({}, { strict: false }));
-const timeCollection = mongoose.model('timeDemo', new mongoose.Schema({}, { strict: false }));
+const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongoose.Schema({}, { strict: false }));
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 
 
@@ -72,6 +72,27 @@ app.get('/managerCheckIn', async (req, res) => {
     res.send({ message: 'project not found' });
   }
 })
+
+app.post('/managerCheckOut', async (req, res) => {
+  const managerID = parseInt(req.query.managerId);
+  const dateObj = new Date();
+  const dateString = dateObj.toISOString();
+  const todayDate = dateString.substring(0, 10);
+  const currentTime = dateString.substring(11, 16);
+
+  const project = await dailyRunningProject.findOne({ 'managerInfo.ID': managerID })
+  if (project) {
+    const insert = await managerCheckInCollection.create({project, checkOutDate: todayDate, checkOutTime: currentTime});
+    const remove = await dailyRunningProject.deleteOne({ 'managerInfo.ID': managerID });
+    console.log(remove)
+    return res.send(remove);
+  }
+  else {
+    res.send({ message: 'project not found' });
+  }
+})
+
+
 
 // -------------------------------------------------------checkIn-----------------------------------------------
 app.post('/checkIn', async (req, res) => {
