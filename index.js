@@ -93,7 +93,27 @@ app.post('/managerCheckOut', async (req, res) => {
 })
 
 // -------------------------------userCheckOut-----------------------------------
-
+app.post('/employeeCheckOut', async(req, res)=>{
+  const employeeId = parseInt(req.query.employeeId);
+  const dateObj = new Date();
+  const dateString = dateObj.toISOString();
+  const todayDate = dateString.substring(0, 10);
+  const currentTime = dateString.substring(11, 16);
+ 
+  const result = await clockInCollection.findOneAndUpdate(
+    {"ID": employeeId},
+    {
+      $set: {
+        'ClockInDetails.$[element].clockOutTime': currentTime, 
+      },
+    },
+    {
+      arrayFilters: [{ 'element.currentDate': todayDate }],
+      new: true,
+    })
+    console.log(result);
+    res.send(result)
+})
 
 
 
