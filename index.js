@@ -16,12 +16,7 @@ mongoose.connect(uri, {
 
 const db = mongoose.connection;
 
-// -----------------------------TODO----------------------------
-// 1. have implement manpower section data 
-// 2. convert farenheight to cel 
-// 3. have to implement checkout part daynamic 
-// 4. have to implement daily report
-// 5. have to chenge wether api
+
 
 db.on('error', (err) => {
   console.error(`Error connecting to MongoDB: ${err}`);
