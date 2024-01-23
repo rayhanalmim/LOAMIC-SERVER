@@ -165,16 +165,22 @@ app.post('/checkIn', async (req, res) => {
 app.post('/dailyReport', async (req, res) => {
   const userId = parseInt(req.query.userId);
   const projectId = parseInt(req.query.projectId);
-  const { role } = req.body;
+  const  role  = req.query.role;
   const { activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, workingUnderManagerId, employee, hours, injured } = req.body;
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
   const todayDate = dateString.substring(0, 10);
   console.log(userId, projectId, role, activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, todayDate);
 
-  const project = await projectCollection.findOne({ Project_id: projectId }, { Project_id: 1, Project_Name: 1, _id: 0 });
-  const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=26.026731&lon=88.480961&appid=${process.env.SECRETKEY}`);
-  const currentWaither = { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main };
+  const project = await projectCollection.findOne({ Project_id: projectId }, { Project_id: 1, Project_Name: 1, _id: 0, latitude: 1, longitude: 1 });
+  const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${project.latitude}&lon=${project.longitude}&appid=${process.env.SECRETKEY}`);
+  const weaitherCondition = { weaither: weatherInfo.data.weather[0], OtherInfo: {
+    temp: (weatherInfo.data.main.temp - 273.15).toFixed(2), 
+    feels_like: (weatherInfo.data.main.feels_like - 273.15).toFixed(2),
+    temp_min: (weatherInfo.data.main.temp_min - 273.15).toFixed(2),
+    temp_max: (weatherInfo.data.main.temp_max - 273.15).toFixed(2),
+    pressure: weatherInfo.data.main.pressure,
+  } };
 
   if (role === 'user') {
     const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
@@ -186,7 +192,7 @@ app.post('/dailyReport', async (req, res) => {
       employee_name: user.First_Name + ' ' + user.Last_Name_and_Suffix,
       workingUnderManagerId: workingUnderManagerId,
       date: new Date,
-      weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },
+      weaitherCondition,
       activity: activity,
       rental: rental,
       isInjury: isInjury,
@@ -218,9 +224,9 @@ app.post('/dailyReport', async (req, res) => {
     const dailyReportForManager = {
       job_name: project.Project_Name,
       job_id: project.Project_id,
-      employee_name: manager.First_Name + ' ' + manager.Last_Name_and_Suffix,
+      employee_name: manager.Employee_First_Name + ' ' + manager.Employee_Last_Name_and_Suffix,
       date: new Date,
-      weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main },
+      weaitherCondition,
       activity: activity,
       manpower: {
         employee: employee,
@@ -235,11 +241,11 @@ app.post('/dailyReport', async (req, res) => {
       receipt_img: receipt_img
     };
 
-    const todayCollection = await managerDailyReportCollection.findOne({ Date: date });
+    const todayCollection = await managerDailyReportCollection.findOne({ Date: todayDate });
 
     if (todayCollection) {
       const update = await managerDailyReportCollection.updateOne(
-        { Date: date },
+        { Date: todayDate },
         {
           $push: { dailyReport: dailyReportForManager },
         },
