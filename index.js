@@ -125,6 +125,7 @@ app.post('/checkIn', async (req, res) => {
   const currentTime = dateString.substring(11, 16);
 
   const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1, cover_image_url: 1, latitude: 1, longitude: 1 });
+  const dailyRunningPRoject = await dailyReportCollection.findOne({'project.Project_id': projectIdInt}, {managerInfo: 1})
   const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${project.latitude}&lon=${project.longitude}&appid=${process.env.SECRETKEY}`);
 
   const weaitherCondition = { weaither: weatherInfo.data.weather[0], OtherInfo: {
@@ -159,7 +160,7 @@ app.post('/checkIn', async (req, res) => {
     const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
     if (!isExists) {
-      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, projectInfo: { project, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main } }, ClockInTime: currentTime, clockOutTime: 'on the way' }] })
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix,  ClockInDetails: [{ currentDate: todayDate, projectInfo: { project, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main } }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt, ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
@@ -170,7 +171,7 @@ app.post('/checkIn', async (req, res) => {
         const update = await clockInCollection.updateOne(
           { ID: userIdInt },
           {
-            $push: { ClockInDetails: { currentDate: todayDate, projectInfo: { project, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main } }, ClockInTime: currentTime, clockOutTime: 'on the way' } },
+            $push: { ClockInDetails: { currentDate: todayDate, projectInfo: { project, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main } }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
           },
         );
         return res.send(update);
@@ -179,6 +180,10 @@ app.post('/checkIn', async (req, res) => {
   }
   res.send({ message: 'error! required query: "projectId" , "userId" , "role" ["role" should be "manager" or "user"]' })
 })
+
+// ------------------------doneNotCheck 
+// 1. get manager data from daily data Collection
+// 2. post the data in check out Collection 
 
 // ------------------------------dailyReport---------------------------------------
 app.post('/dailyReport', async (req, res) => {
