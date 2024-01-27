@@ -125,7 +125,8 @@ app.post('/checkIn', async (req, res) => {
   const currentTime = dateString.substring(11, 16);
 
   const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1, cover_image_url: 1, latitude: 1, longitude: 1 });
-  const dailyRunningPRoject = await dailyReportCollection.findOne({'project.Project_id': projectIdInt}, {managerInfo: 1})
+  const dailyRunningPRoject = await dailyRunningProject.findOne({'project.Project_id': projectIdInt}, {managerInfo: 1})
+  console.log(dailyRunningPRoject)
   const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${project.latitude}&lon=${project.longitude}&appid=${process.env.SECRETKEY}`);
 
   const weaitherCondition = { weaither: weatherInfo.data.weather[0], OtherInfo: {
