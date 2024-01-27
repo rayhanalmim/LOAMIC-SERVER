@@ -16,9 +16,6 @@ mongoose.connect(uri, {
 
 const db = mongoose.connection;
 
-// ------------------------------TODO---------------------
-// 1. have to genarate dynamic pdf
-
 db.on('error', (err) => {
   console.error(`Error connecting to MongoDB: ${err}`);
 });
