@@ -6,6 +6,11 @@ const port = process.env.PORT || 5000;
 const axios = require('axios');
 require('dotenv').config()
 
+// -----------------addSomeTodo
+// 1.have to add daynamic pdf 
+// 2. genarate time card for employee 
+
+
 app.use(cors())
 app.use(express.json())
 
