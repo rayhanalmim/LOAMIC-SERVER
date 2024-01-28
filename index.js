@@ -121,35 +121,25 @@ app.post('/checkIn', async (req, res) => {
   const userIdInt = parseInt(req.query.userId);
   const role = req.query.role;
   const dateObj = new Date();
-  console.log(dateObj)
   const dateString = dateObj.toISOString();
   const todayDate = dateString.substring(0, 10);
   const currentTime = dateString.substring(11, 16);
 
   const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1, cover_image_url: 1, latitude: 1, longitude: 1 });
   const dailyRunningPRoject = await dailyRunningProject.findOne({'project.Project_id': projectIdInt}, {managerInfo: 1})
-  console.log(dailyRunningPRoject)
-  const weatherInfo = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${project.latitude}&lon=${project.longitude}&appid=${process.env.SECRETKEY}`);
-
-  const weaitherCondition = { weaither: weatherInfo.data.weather[0], OtherInfo: {
-    temp: (weatherInfo.data.main.temp - 273.15).toFixed(2), 
-    feels_like: (weatherInfo.data.main.feels_like - 273.15).toFixed(2),
-    temp_min: (weatherInfo.data.main.temp_min - 273.15).toFixed(2),
-    temp_max: (weatherInfo.data.main.temp_max - 273.15).toFixed(2),
-    pressure: weatherInfo.data.main.pressure,
-  } };
+  const newWeatherInfo = await axios.get(`https://api.weatherapi.com/v1/current.json?q=${project.latitude},${project.longitude}&key=${process.env.SECRETKEY}`);
+  const newWeather = {...newWeatherInfo.data.location, ...newWeatherInfo.data.current };
 
   if (role === 'manager') {
     const manager = await adminCollection.findOne({ ID: userIdInt }, { ID: 1, Employee_First_Name: 1, Employee_Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
 
     const isExist = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt });
-    console.log(isExist);
     if (isExist) {
       return res.send({ massege: 'this project already listed in running project collection' })
     }
     else {
       const result = await dailyRunningProject.create({
-        project, checkInDate: todayDate, checkInTime: currentTime, isCheckIn: true, managerInfo: manager, weaitherCondition , manpower: {
+        project, checkInDate: todayDate, checkInTime: currentTime, isCheckIn: true, managerInfo: manager, weather_condition: newWeatherInfo , manpower: {
           employee: 'employee',
           hours: 'hours',
           injured: 'injured',
@@ -163,7 +153,7 @@ app.post('/checkIn', async (req, res) => {
     const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
     if (!isExists) {
-      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix,  ClockInDetails: [{ currentDate: todayDate, projectInfo: { project, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main } }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix,  ClockInDetails: [{ currentDate: todayDate, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt, ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
@@ -174,7 +164,7 @@ app.post('/checkIn', async (req, res) => {
         const update = await clockInCollection.updateOne(
           { ID: userIdInt },
           {
-            $push: { ClockInDetails: { currentDate: todayDate, projectInfo: { project, weather_condition: { weaither: weatherInfo.data.weather[0], OtherInfo: weatherInfo.data.main } }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
+            $push: { ClockInDetails: { currentDate: todayDate, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
           },
         );
         return res.send(update);
