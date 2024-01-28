@@ -139,7 +139,7 @@ app.post('/checkIn', async (req, res) => {
     }
     else {
       const result = await dailyRunningProject.create({
-        project, checkInDate: todayDate, checkInTime: currentTime, isCheckIn: true, managerInfo: manager, weather_condition: newWeatherInfo , manpower: {
+        project, checkInDate: todayDate, checkInTime: currentTime, isCheckIn: true, managerInfo: manager, weather_condition: newWeather , manpower: {
           employee: 'employee',
           hours: 'hours',
           injured: 'injured',
