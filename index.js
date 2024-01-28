@@ -113,8 +113,6 @@ app.post('/employeeCheckOut', async(req, res)=>{
     res.send(result)
 })
 
-
-
 // -------------------------------------------------------checkIn-----------------------------------------------
 app.post('/checkIn', async (req, res) => {
   const projectIdInt = parseInt(req.query.projectId);
@@ -173,10 +171,6 @@ app.post('/checkIn', async (req, res) => {
   }
   res.send({ message: 'error! required query: "projectId" , "userId" , "role" ["role" should be "manager" or "user"]' })
 })
-
-// ------------------------doneNotCheck 
-// 1. get manager data from daily data Collection
-// 2. post the data in check out Collection 
 
 // ------------------------------dailyReport---------------------------------------
 app.post('/dailyReport', async (req, res) => {
