@@ -6,14 +6,18 @@ const port = process.env.PORT || 5000;
 const axios = require('axios');
 require('dotenv').config()
 const fs = require('fs');
-const pdf = require('html-pdf');
 const path = require('path');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 
 
-// -----------------addSomeTodo
-// 1.have to add daynamic pdf 
-// 2. genarate time card for employee 
-
+const cloudinary = require('cloudinary').v2;
+          
+cloudinary.config({ 
+  cloud_name: 'deqkxg249', 
+  api_key: '291618369758335', 
+  api_secret: '6n-UyPBSm9AEMCJ_9vA5XOqJ1Ak' 
+});
 
 app.use(cors())
 app.use(express.json())
@@ -43,6 +47,27 @@ const managerDailyReportCollection = mongoose.model('managerDailyReport', new mo
 const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.Schema({}, { strict: false }));
 const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongoose.Schema({}, { strict: false }));
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
+const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { strict: false }));
+
+// -----------------------------imageUploadApi-------------------------------
+
+app.post('/uploadImage', upload.single('imagePath'), async (req, res) => {
+  try {
+    // Assuming you have the image path from flatterflow in the request
+    const imagePath = req.file.path;
+    console.log(imagePath)
+
+    // Upload the image to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(imagePath);
+
+  const insertImage = await imageCollection.create({ cloudinaryUrl: uploadResult})
+    res.json({ imageUrl: uploadResult.secure_url });
+
+  } catch (error) {
+    console.error('Error uploading image to Cloudinary:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 // --------------------------daynamic_Pdf_Create------------------------
 
