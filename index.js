@@ -45,28 +45,7 @@ const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongo
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 
 // --------------------------daynamic_Pdf_Create------------------------
-app.get('/createPdf', async(req, res)=>{
-  const value = req.query.value;
-  let html = fs.readFileSync('./index.html','utf8');
-  const option = {
-    format : 'Letter'
-  }
-  let mapObj ={
-    '{{time}}': value,
-  }
-  html = html.replace(/{{time}}/gi, (matched)=>{return mapObj[matched]});
-  const data = pdf.create(html,option).toFile('./invoice.pdf', function(err, resp){
-    if(err){
-      console.log(err);
-    }
-    const pdfFilePath = path.join(__dirname, 'invoice.pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
-      
-      // Send the PDF file as a stream
-      const fileStream = fs.createReadStream(pdfFilePath);
-      fileStream.pipe(res);
-  })
-})
+
 
 // -------------------------------------------employeeClockInCard------------------------------------
 
