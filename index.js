@@ -8,58 +8,35 @@ require('dotenv').config()
 const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
-// const multer = require('multer');
-// const upload = multer({ dest: 'uploads/' });
-
 const multer = require('multer');
-// const multerS3 = require('multer-s3');
 const AWS = require('aws-sdk');
+const pdf = require('html-pdf');
 
-// const { S3 } = require('aws-sdk');
-// const s3 = new S3();
+// const cloudinary = require('cloudinary').v2;
 
+app.use(cors())
+app.use(express.json())
 
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   region: process.env.AWS_REGION,
 });
-console.log(process.env.AWS_ACCESS_KEY_ID);
-
 const s3 = new AWS.S3();
 
-
-// const upload = multer({
-//   storage: multerS3({
-//     s3: s3,
-//     bucket: 'loamic-builders',
-//     acl: 'public-read', // Set the appropriate ACL for your use case
-//     key: function (req, file, cb) {
-//       cb(null, Date.now().toString() + '-' + file.originalname);
-//     },
-//   }),
+// cloudinary.config({ 
+//   cloud_name: 'deqkxg249', 
+//   api_key: '291618369758335', 
+//   api_secret: '6n-UyPBSm9AEMCJ_9vA5XOqJ1Ak' 
 // });
 
 const upload = multer({
   storage: multer.memoryStorage(),
 }).single('imagePath');
 
-const pdf = require('html-pdf');
-
-
-
-const cloudinary = require('cloudinary').v2;
           
-cloudinary.config({ 
-  cloud_name: 'deqkxg249', 
-  api_key: '291618369758335', 
-  api_secret: '6n-UyPBSm9AEMCJ_9vA5XOqJ1Ak' 
-});
-
-app.use(cors())
-app.use(express.json())
-
-const uri = `mongodb+srv://loamicDB:02hYw9qqhERUyT41@cluster0.tdvw5wt.mongodb.net/loamicDB?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.tdvw5wt.mongodb.net/loamicDB?retryWrites=true&w=majority`;
+console.log(process.env.DB_PASS);
 
 mongoose.connect(uri, {
 });
