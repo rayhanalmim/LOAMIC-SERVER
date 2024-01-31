@@ -88,6 +88,7 @@ app.get('/createPdf', async (req, res) => {
     const doc = new PDFDocument();
     const pdfBuffer = [];
     const dataFromDatabase = 'rayhan';
+    const imageLink = 'https://loamic-media.s3.us-east-2.amazonaws.com/1706682098774-1200px-Node.js_logo.svg.png';
   
     doc.on('data', chunk => pdfBuffer.push(chunk));
     doc.on('end', async () => {
@@ -117,15 +118,16 @@ app.get('/createPdf', async (req, res) => {
 
     // doc.fontSize(16).text('Hello, this is a dynamic PDF!', 100, 100);
 
-    doc.fontSize(16);
-    if (dataFromDatabase) {
-      // Include dynamic data in the HTML content
-      const htmlContent = `<h1>Hello, ${dataFromDatabase}! This is a dynamic PDF!</h1>`;
-      doc.text(htmlContent, { align: 'center' });
-    } else {
-      // Default HTML content
-      const htmlContent = '<h1>Hello, this is a dynamic PDF!</h1>';
-      doc.text(htmlContent, { align: 'center' });
+    doc.fontSize(16).text(`Hello, ${dataFromDatabase || 'Guest'}! This is a dynamic PDF!`, {
+      align: 'center',
+    });
+    try {
+      const imageResponse = await axios.get(imageLink, { responseType: 'arraybuffer' });
+      const imageBuffer = Buffer.from(imageResponse.data);
+      doc.image(imageBuffer, { fit: [200, 200], align: 'center', valign: 'center' });
+    } catch (imageError) {
+      console.error('Error downloading image:', imageError);
+      // Handle error, you may want to use a default image in case of failure
     }
 
     doc.end();
