@@ -24,9 +24,17 @@ AWS.config.update({
 });
 const s3 = new AWS.S3();
 
+// const upload = multer({
+//   storage: multer.memoryStorage(),
+// }).single('imagePath');
+
 const upload = multer({
   storage: multer.memoryStorage(),
-}).single('imagePath');
+}).fields([
+  { name: 'imagePath1', maxCount: 1 },
+  { name: 'imagePath2', maxCount: 1 },
+  { name: 'imagePath3', maxCount: 1 },
+]);
 
 
 const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.tdvw5wt.mongodb.net/loamicDB?retryWrites=true&w=majority`;
@@ -59,27 +67,74 @@ const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { 
 
 // -----------------------------imageUploadApi-------------------------------
 // upload.single('imagePath'),
-app.post('/uploadImage', upload, async (req, res) => {
 
-  const params = {
-    Bucket: 'loamic-media',
-    Key: Date.now().toString() + '-' + req.file.originalname,
-    Body: req.file.buffer,
-    ACL: 'public-read', // Set the appropriate ACL for your use case
-    ContentType: req.file.mimetype,
-  };
-
-  s3.upload(params, (err, data) => {
+app.post('/uploadImage', (req, res) => {
+  upload(req, res, async (err) => {
     if (err) {
       console.error('Error uploading to S3:', err);
       return res.status(500).json({ error: 'Failed to upload to S3' });
     }
-    console.log(data);
 
-    console.log('Image uploaded successfully. S3 Object URL:', data.Location);
-    res.json({ message: 'Image uploaded successfully', url: data.Location });
+    const uploadPromises = [];
+
+    // Loop through each field name and upload the corresponding file
+    ['imagePath1', 'imagePath2', 'imagePath3'].forEach((fieldName) => {
+      const file = req.files[fieldName][0];
+
+      const params = {
+        Bucket: 'loamic-media',
+        Key: Date.now().toString() + '-' + file.originalname,
+        Body: file.buffer,
+        ACL: 'public-read',
+        ContentType: file.mimetype,
+      };
+
+      uploadPromises.push(
+        new Promise((resolve, reject) => {
+          s3.upload(params, (err, data) => {
+            if (err) {
+              console.error('Error uploading to S3:', err);
+              reject({ error: `Failed to upload ${fieldName} to S3` });
+            } else {
+              console.log(data);
+              console.log(`Image ${fieldName} uploaded successfully. S3 Object URL:`, data.Location);
+              resolve({ message: `Image ${fieldName} uploaded successfully`, url: data.Location });
+            }
+          });
+        })
+      );
+    });
+
+    try {
+      const results = await Promise.all(uploadPromises);
+      res.json(results);
+    } catch (error) {
+      res.status(500).json(error);
+    }
   });
 });
+
+// app.post('/uploadImage', upload, async (req, res) => {
+
+//   const params = {
+//     Bucket: 'loamic-media',
+//     Key: Date.now().toString() + '-' + req.file.originalname,
+//     Body: req.file.buffer,
+//     ACL: 'public-read', // Set the appropriate ACL for your use case
+//     ContentType: req.file.mimetype,
+//   };
+
+//   s3.upload(params, (err, data) => {
+//     if (err) {
+//       console.error('Error uploading to S3:', err);
+//       return res.status(500).json({ error: 'Failed to upload to S3' });
+//     }
+//     console.log(data);
+
+//     console.log('Image uploaded successfully. S3 Object URL:', data.Location);
+//     res.json({ message: 'Image uploaded successfully', url: data.Location });
+//   });
+// });
 
 // --------------------------daynamic_Pdf_Create------------------------
 
