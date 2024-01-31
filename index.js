@@ -7,8 +7,45 @@ const axios = require('axios');
 require('dotenv').config()
 const fs = require('fs');
 const path = require('path');
+const puppeteer = require('puppeteer');
+// const multer = require('multer');
+// const upload = multer({ dest: 'uploads/' });
+
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
+// const multerS3 = require('multer-s3');
+const AWS = require('aws-sdk');
+
+// const { S3 } = require('aws-sdk');
+// const s3 = new S3();
+
+
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+});
+console.log(process.env.AWS_ACCESS_KEY_ID);
+
+const s3 = new AWS.S3();
+
+
+// const upload = multer({
+//   storage: multerS3({
+//     s3: s3,
+//     bucket: 'loamic-builders',
+//     acl: 'public-read', // Set the appropriate ACL for your use case
+//     key: function (req, file, cb) {
+//       cb(null, Date.now().toString() + '-' + file.originalname);
+//     },
+//   }),
+// });
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+}).single('imagePath');
+
+const pdf = require('html-pdf');
+
 
 
 const cloudinary = require('cloudinary').v2;
@@ -50,27 +87,95 @@ const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schem
 const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { strict: false }));
 
 // -----------------------------imageUploadApi-------------------------------
+// upload.single('imagePath'),
+app.post('/uploadImage', upload , async (req, res) => {
+ 
+  const params = {
+    Bucket: 'loamic-media',
+    Key: Date.now().toString() + '-' + req.file.originalname,
+    Body: req.file.buffer,
+    ACL: 'public-read', // Set the appropriate ACL for your use case
+    ContentType: req.file.mimetype,
+  };
 
-app.post('/uploadImage', upload.single('imagePath'), async (req, res) => {
-  try {
-    // Assuming you have the image path from flatterflow in the request
-    const imagePath = req.file.path;
-    console.log(imagePath)
+  s3.upload(params, (err, data) => {
+    if (err) {
+      console.error('Error uploading to S3:', err);
+      return res.status(500).json({ error: 'Failed to upload to S3' });
+    }
+    console.log(data);
 
-    // Upload the image to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(imagePath);
+    console.log('Image uploaded successfully. S3 Object URL:', data.Location);
+    res.json({ message: 'Image uploaded successfully', url: data.Location });
+  });
 
-  const insertImage = await imageCollection.create({ cloudinaryUrl: uploadResult})
-    res.json({ imageUrl: uploadResult.secure_url });
+  // try {
+  //   // Assuming you have the image path from flatterflow in the request
+  //   const imagePath = req.file.location;
+  //   console.log(req)
 
-  } catch (error) {
-    console.error('Error uploading image to Cloudinary:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+  //   // Upload the image to Cloudinary
+  //   const uploadResult = await cloudinary.uploader.upload(imagePath);
+
+  // const insertImage = await imageCollection.create({ cloudinaryUrl: uploadResult})
+  //   res.send({ imageUrl: uploadResult.secure_url });
+
+  // } catch (error) {
+  //   console.error('Error uploading image to Cloudinary:', error);
+  //   res.status(500).json({ error: 'Internal Server Error' });
+  // }
 });
 
 // --------------------------daynamic_Pdf_Create------------------------
 
+// app.get('/createPdf', async (req, res)=>{
+//   try {
+//     const browser = await puppeteer.launch({ headless: "new" });
+    
+//     const page = await await browser.newPage();
+
+//     await page.setContent('<h1>hello  ytrw     fasforld</h1>')
+
+//     // create a pdf document 
+
+//     await page.pdf({
+//       path:'invoid.pdf',
+//       format:'A4',
+//       printBackground:true,
+//     })
+
+//     console.log('done creating pdf');
+//     await browser.close();
+//     res.send({massege: 'pdf create successfully'});
+    
+
+//   } catch (err) {
+//     console.log(err);
+//   }
+// })
+
+app.get('/createPdf', async(req, res)=>{
+  const value = req.query.value;
+  let html = fs.readFileSync('./index.html','utf8');
+  const option = {
+    format : 'Letter'
+  }
+  let mapObj ={
+    '{{time}}': value,
+  }
+  html = html.replace(/{{time}}/gi, (matched)=>{return mapObj[matched]});
+  const data = pdf.create(html,option).toFile('./invoice.pdf', function(err, resp){
+    if(err){
+      console.log(err);
+    }
+    const pdfFilePath = path.join(__dirname, 'invoice.pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+
+      // Send the PDF file as a stream
+      const fileStream = fs.createReadStream(pdfFilePath);
+      fileStream.pipe(res);
+  })
+})
 
 // -------------------------------------------employeeClockInCard------------------------------------
 
