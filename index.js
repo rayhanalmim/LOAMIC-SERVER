@@ -34,7 +34,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
 }).single('imagePath');
 
-          
+
 const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.tdvw5wt.mongodb.net/loamicDB?retryWrites=true&w=majority`;
 console.log(process.env.DB_PASS);
 
@@ -65,8 +65,8 @@ const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { 
 
 // -----------------------------imageUploadApi-------------------------------
 // upload.single('imagePath'),
-app.post('/uploadImage', upload , async (req, res) => {
- 
+app.post('/uploadImage', upload, async (req, res) => {
+
   const params = {
     Bucket: 'loamic-media',
     Key: Date.now().toString() + '-' + req.file.originalname,
@@ -108,7 +108,7 @@ app.post('/uploadImage', upload , async (req, res) => {
 // app.get('/createPdf', async (req, res)=>{
 //   try {
 //     const browser = await puppeteer.launch({ headless: "new" });
-    
+
 //     const page = await await browser.newPage();
 
 //     await page.setContent('<h1>hello  ytrw     fasforld</h1>')
@@ -124,35 +124,75 @@ app.post('/uploadImage', upload , async (req, res) => {
 //     console.log('done creating pdf');
 //     await browser.close();
 //     res.send({massege: 'pdf create successfully'});
-    
+
 
 //   } catch (err) {
 //     console.log(err);
 //   }
 // })
 
-app.get('/createPdf', async(req, res)=>{
-  const value = req.query.value;
-  let html = fs.readFileSync('./index.html','utf8');
-  const option = {
-    format : 'Letter'
-  }
-  let mapObj ={
-    '{{time}}': value,
-  }
-  html = html.replace(/{{time}}/gi, (matched)=>{return mapObj[matched]});
-  const data = pdf.create(html,option).toFile('./invoice.pdf', function(err, resp){
-    if(err){
-      console.log(err);
-    }
-    const pdfFilePath = path.join(__dirname, 'invoice.pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+// app.get('/createPdf', async(req, res)=>{
+//   const value = req.query.value;
+//   let html = fs.readFileSync('./index.html','utf8');
+//   const option = {
+//     format : 'Letter'
+//   }
+//   let mapObj ={
+//     '{{time}}': value,
+//   }
+//   html = html.replace(/{{time}}/gi, (matched)=>{return mapObj[matched]});
+//   const data = pdf.create(html,option).toFile('./invoice.pdf', function(err, resp){
+//     if(err){
+//       console.log(err);
+//     }
+//     const pdfFilePath = path.join(__dirname, 'invoice.pdf');
+//     res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
 
-      // Send the PDF file as a stream
-      const fileStream = fs.createReadStream(pdfFilePath);
-      fileStream.pipe(res);
-  })
-})
+//       // Send the PDF file as a stream
+//       const fileStream = fs.createReadStream(pdfFilePath);
+//       fileStream.pipe(res);
+//   })
+// })
+
+app.get('/createPdf', async (req, res) => {
+  const value = req.query.value;
+  let html = fs.readFileSync('./index.html', 'utf8');
+  const option = {
+    format: 'Letter',
+  };
+  let mapObj = {
+    '{{time}}': value,
+  };
+  html = html.replace(/{{time}}/gi, (matched) => {
+    return mapObj[matched];
+  });
+
+  pdf.create(html, option).toFile('./invoice.pdf', async function (err, resp) {
+    if (err) {
+      console.log(err);
+      res.status(500).send('Internal Server Error');
+      return;
+    }
+
+    const pdfFilePath = path.join(__dirname, 'invoice.pdf');
+
+    // Upload the PDF to S3
+    const params = {
+      Bucket: 'your-s3-bucket-name',
+      Key: 'invoice.pdf',
+      Body: fs.createReadStream(pdfFilePath),
+      ContentType: 'application/pdf',
+    };
+
+    try {
+      await s3.upload(params).promise();
+      res.status(200).send('PDF successfully generated and uploaded to S3');
+    } catch (uploadError) {
+      console.error(uploadError);
+      res.status(500).send('Error uploading PDF to S3');
+    }
+  });
+});
 
 // -------------------------------------------employeeClockInCard------------------------------------
 
@@ -193,7 +233,7 @@ app.post('/managerCheckOut', async (req, res) => {
 
   const project = await dailyRunningProject.findOne({ 'managerInfo.ID': managerID })
   if (project) {
-    const insert = await managerCheckInCollection.create({project, checkOutDate: todayDate, checkOutTime: currentTime});
+    const insert = await managerCheckInCollection.create({ project, checkOutDate: todayDate, checkOutTime: currentTime });
     const remove = await dailyRunningProject.deleteOne({ 'managerInfo.ID': managerID });
     console.log(remove)
     return res.send(remove);
@@ -204,26 +244,26 @@ app.post('/managerCheckOut', async (req, res) => {
 })
 
 // -------------------------------userCheckOut-----------------------------------
-app.post('/employeeCheckOut', async(req, res)=>{
+app.post('/employeeCheckOut', async (req, res) => {
   const employeeId = parseInt(req.query.employeeId);
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
   const todayDate = dateString.substring(0, 10);
   const currentTime = dateString.substring(11, 16);
- 
+
   const result = await clockInCollection.findOneAndUpdate(
-    {"ID": employeeId},
+    { "ID": employeeId },
     {
       $set: {
-        'ClockInDetails.$[element].clockOutTime': currentTime, 
+        'ClockInDetails.$[element].clockOutTime': currentTime,
       },
     },
     {
       arrayFilters: [{ 'element.currentDate': todayDate }],
       new: true,
     })
-    console.log(result);
-    res.send(result)
+  console.log(result);
+  res.send(result)
 })
 
 // -------------------------------------------------------checkIn-----------------------------------------------
@@ -237,9 +277,9 @@ app.post('/checkIn', async (req, res) => {
   const currentTime = dateString.substring(11, 16);
 
   const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1, cover_image_url: 1, latitude: 1, longitude: 1 });
-  const dailyRunningPRoject = await dailyRunningProject.findOne({'project.Project_id': projectIdInt}, {managerInfo: 1})
+  const dailyRunningPRoject = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt }, { managerInfo: 1 })
   const newWeatherInfo = await axios.get(`https://api.weatherapi.com/v1/current.json?q=${project.latitude},${project.longitude}&key=${process.env.SECRETKEY}`);
-  const newWeather = {...newWeatherInfo.data.location, ...newWeatherInfo.data.current };
+  const newWeather = { ...newWeatherInfo.data.location, ...newWeatherInfo.data.current };
 
   if (role === 'manager') {
     const manager = await adminCollection.findOne({ ID: userIdInt }, { ID: 1, Employee_First_Name: 1, Employee_Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
@@ -250,7 +290,7 @@ app.post('/checkIn', async (req, res) => {
     }
     else {
       const result = await dailyRunningProject.create({
-        project, checkInDate: todayDate, checkInTime: currentTime, isCheckIn: true, managerInfo: manager, weather_condition: newWeather , manpower: {
+        project, checkInDate: todayDate, checkInTime: currentTime, isCheckIn: true, managerInfo: manager, weather_condition: newWeather, manpower: {
           employee: 'employee',
           hours: 'hours',
           injured: 'injured',
@@ -264,7 +304,7 @@ app.post('/checkIn', async (req, res) => {
     const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
     if (!isExists) {
-      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix,  ClockInDetails: [{ currentDate: todayDate, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt, ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
@@ -289,7 +329,7 @@ app.post('/checkIn', async (req, res) => {
 app.post('/dailyReport', async (req, res) => {
   const userId = parseInt(req.query.userId);
   const projectId = parseInt(req.query.projectId);
-  const  role  = req.query.role;
+  const role = req.query.role;
   const { activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, workingUnderManagerId, employee, hours, injured } = req.body;
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
@@ -298,7 +338,7 @@ app.post('/dailyReport', async (req, res) => {
 
   const project = await projectCollection.findOne({ Project_id: projectId }, { Project_id: 1, Project_Name: 1, _id: 0, latitude: 1, longitude: 1 });
   const newWeatherInfo = await axios.get(`https://api.weatherapi.com/v1/current.json?q=${project.latitude},${project.longitude}&key=${process.env.SECRETKEY}`);
-  const newWeather = {...newWeatherInfo.data.location, ...newWeatherInfo.data.current };
+  const newWeather = { ...newWeatherInfo.data.location, ...newWeatherInfo.data.current };
 
   if (role === 'user') {
     const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
