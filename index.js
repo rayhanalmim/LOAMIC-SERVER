@@ -11,6 +11,8 @@ const puppeteer = require('puppeteer');
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const pdf = require('html-pdf');
+const { PassThrough } = require('stream');
+const PDFDocument = require('pdfkit');
 
 app.use(cors())
 app.use(express.json())
@@ -81,6 +83,171 @@ app.post('/uploadImage', upload, async (req, res) => {
 
 // --------------------------daynamic_Pdf_Create------------------------
 
+app.get('/createPdf', async (req, res) => {
+  try {
+    const doc = new PDFDocument();
+    const pdfBuffer = [];
+  
+    doc.on('data', chunk => pdfBuffer.push(chunk));
+    doc.on('end', async () => {
+      // Upload the PDF buffer to S3
+      const params = {
+        Bucket: 'loamic-media',
+        Key: 'invoice.pdf',
+        Body: Buffer.concat(pdfBuffer),
+        ContentType: 'application/pdf',
+      };
+
+      try {
+        await s3.upload(params).promise();
+
+        // Set headers for triggering the download
+        res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+        res.setHeader('Content-Type', 'application/pdf');
+
+        // Stream the S3 object directly to the response
+        const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
+        pdfStream.pipe(res);
+      } catch (uploadError) {
+        console.error(uploadError);
+        res.status(500).send('Error uploading PDF to S3');
+      }
+    });
+
+    doc.fontSize(16).text('Hello, this is a dynamic PDF!', 100, 100);
+    doc.end();
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+// app.get('/createPdf', async (req, res) => {
+
+//   try {
+//     // Check if the file exists before attempting to read it
+//     const doc = new PDFDocument();
+//     const pdfPath = 'output.pdf';
+
+//     // Use a writable stream to capture the PDF content
+//     const pdfStream = fs.createWriteStream(pdfPath);
+
+//     doc.pipe(pdfStream);
+//     doc.fontSize(16).text('Hello, this is a dynamic PDF!', 100, 100);
+//     doc.end();
+
+//      // Wait for the PDF to be fully written before uploading to S3
+//      await new Promise((resolve, reject) => {
+//       pdfStream.on('finish', resolve);
+//       pdfStream.on('error', reject);
+//     });
+
+//     // Upload the PDF to S3
+//     const params = {
+//       Bucket: 'loamic-media',
+//       Key: 'invoice.pdf',
+//       Body: fs.createReadStream('output.pdf'),
+//       ContentType: 'application/pdf',
+//     };
+
+//     try {
+//       await s3.upload(params).promise();
+
+//       // Get a signed URL for the uploaded PDF
+//       const signedUrl = s3.getSignedUrl('getObject', {
+//         Bucket: 'loamic-media',
+//         Key: 'invoice.pdf',
+//       });
+
+//       // Set headers for triggering the download
+//       res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+//       res.setHeader('Content-Type', 'application/pdf');
+
+//       // Stream the S3 object directly to the response
+//       const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
+//       const passThrough = new PassThrough();
+//       pdfStream.pipe(passThrough);
+//       passThrough.pipe(res);
+//     } catch (uploadError) {
+//       console.error(uploadError);
+//       res.status(500).send('Error uploading PDF to S3');
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send({ me: error });
+//   }
+// });
+
+// app.get('/createPdf', async (req, res) => {
+//   const value = req.query.value;
+//   let html = fs.readFileSync('./index.html', 'utf8');
+//   const option = {
+//     format: 'Letter',
+//   };
+//   let mapObj = {
+//     '{{time}}': value,
+//   };
+//   html = html.replace(/{{time}}/gi, (matched) => {
+//     return mapObj[matched];
+//   });
+
+
+// });
+
+// app.get('/createPdf', async (req, res) => {
+//   const value = req.query.value;
+//   let html = fs.readFileSync('./index.html', 'utf8');
+//   const option = {
+//     format: 'Letter',
+//   };
+//   let mapObj = {
+//     '{{time}}': value,
+//   };
+//   html = html.replace(/{{time}}/gi, (matched) => {
+//     return mapObj[matched];
+//   });
+
+//   pdf.create(html, option).toFile('./invoice.pdf', async function (err, resp) {
+//     if (err) {
+//       console.log(err);
+//       res.status(500).send('Internal Server Error');
+//       return;
+//     }
+
+//     const pdfFilePath = path.join(__dirname, 'invoice.pdf');
+
+//     // Upload the PDF to S3
+//     const params = {
+//       Bucket: 'loamic-media',
+//       Key: 'invoice.pdf',
+//       Body: fs.createReadStream(pdfFilePath),
+//       ContentType: 'application/pdf',
+//     };
+
+//     try {
+//       await s3.upload(params).promise();
+//         // Get a signed URL for the uploaded PDF
+//         const signedUrl = s3.getSignedUrl('getObject', {
+//           Bucket: 'loamic-media',
+//           Key: 'invoice.pdf',
+//         });
+
+//          // Set headers for triggering the download
+//       res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+//       res.setHeader('Content-Type', 'application/pdf');
+
+//       // Pipe the S3 object stream directly to the response
+//       s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' })
+//         .createReadStream()
+//         .pipe(res);
+//     } catch (uploadError) {
+//       console.error(uploadError);
+//       res.status(500).send('Error uploading PDF to S3');
+//     }
+//   });
+// });
+
 // app.get('/createPdf', async (req, res)=>{
 //   try {
 //     const browser = await puppeteer.launch({ headless: "new" });
@@ -106,48 +273,6 @@ app.post('/uploadImage', upload, async (req, res) => {
 //     console.log(err);
 //   }
 // })
-
-
-
-app.get('/createPdf', async (req, res) => {
-  const value = req.query.value;
-  let html = fs.readFileSync('./index.html', 'utf8');
-  const option = {
-    format: 'Letter',
-  };
-  let mapObj = {
-    '{{time}}': value,
-  };
-  html = html.replace(/{{time}}/gi, (matched) => {
-    return mapObj[matched];
-  });
-
-  pdf.create(html, option).toFile('./invoice.pdf', async function (err, resp) {
-    if (err) {
-      console.log(err);
-      res.status(500).send('Internal Server Error');
-      return;
-    }
-
-    const pdfFilePath = path.join(__dirname, 'invoice.pdf');
-
-    // Upload the PDF to S3
-    const params = {
-      Bucket: 'your-s3-bucket-name',
-      Key: 'invoice.pdf',
-      Body: fs.createReadStream(pdfFilePath),
-      ContentType: 'application/pdf',
-    };
-
-    try {
-      await s3.upload(params).promise();
-      res.status(200).send('PDF successfully generated and uploaded to S3');
-    } catch (uploadError) {
-      console.error(uploadError);
-      res.status(500).send('Error uploading PDF to S3');
-    }
-  });
-});
 
 // -------------------------------------------employeeClockInCard------------------------------------
 
