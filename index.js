@@ -144,7 +144,7 @@ app.get('/createPdf', async (req, res) => {
     const pdfBuffer = [];
     const dataFromDatabase = 'rayhan';
     const imageLink = 'https://loamic-media.s3.us-east-2.amazonaws.com/1706682098774-1200px-Node.js_logo.svg.png';
-  
+
     doc.on('data', chunk => pdfBuffer.push(chunk));
     doc.on('end', async () => {
       // Upload the PDF buffer to S3
@@ -338,81 +338,126 @@ app.post('/dailyReport', async (req, res) => {
   const newWeatherInfo = await axios.get(`https://api.weatherapi.com/v1/current.json?q=${project.latitude},${project.longitude}&key=${process.env.SECRETKEY}`);
   const newWeather = { ...newWeatherInfo.data.location, ...newWeatherInfo.data.current };
 
-  if (role === 'user') {
-    const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
-    console.log(user);
 
-    const dailyReport = {
-      job_name: project.Project_Name,
-      job_id: project.Project_id,
-      employee_name: user.First_Name + ' ' + user.Last_Name_and_Suffix,
-      workingUnderManagerId: workingUnderManagerId,
-      date: new Date,
-      weaitherCondition: newWeather,
-      activity: activity,
-      rental: rental,
-      isInjury: isInjury,
-      injury_img: injury_img,
-      progress_img: progress_img,
-      eod_img: eod_img,
-      receipt_img: receipt_img,
-    };
+  upload(req, res, async (err) => {
+    if (err) {
+      console.error('Error uploading to S3:', err);
+      return res.status(500).json({ error: 'Failed to upload to S3' });
+    }
 
-    const todayCollection = await dailyReportCollection.findOne({ Date: todayDate });
+    const uploadPromises = [];
 
-    if (todayCollection) {
-      const update = await dailyReportCollection.updateOne(
-        { Date: todayDate },
-        {
-          $push: { dailyReport: dailyReport },
-        },
+    // Loop through each field name and upload the corresponding file
+    ['imagePath1', 'imagePath2', 'imagePath3'].forEach((fieldName) => {
+      const file = req.files[fieldName][0];
+
+      const params = {
+        Bucket: 'loamic-media',
+        Key: Date.now().toString() + '-' + file.originalname,
+        Body: file.buffer,
+        ACL: 'public-read',
+        ContentType: file.mimetype,
+      };
+
+      uploadPromises.push(
+        new Promise((resolve, reject) => {
+          s3.upload(params, (err, data) => {
+            if (err) {
+              reject({ error: `Failed to upload ${fieldName} to S3` });
+            } else {
+              resolve({ message: `Image ${fieldName} uploaded successfully`, url: data.Location });
+            }
+          });
+        })
       );
-      return res.send(update);
-    }
-    else {
-      const create = await dailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReport] })
-      return res.send(create);
-    }
-  }
-  else {
-    const manager = await adminCollection.findOne({ ID: userId });
+    });
 
-    const dailyReportForManager = {
-      job_name: project.Project_Name,
-      job_id: project.Project_id,
-      employee_name: manager.Employee_First_Name + ' ' + manager.Employee_Last_Name_and_Suffix,
-      date: new Date,
-      weaitherCondition: newWeather,
-      activity: activity,
-      manpower: {
-        employee: employee,
-        hours: hours,
-        injured: injured,
-      },
-      rental: rental,
-      isInjury: false,
-      injury_img: injury_img,
-      progress_img: progress_img,
-      eod_img: eod_img,
-      receipt_img: receipt_img
-    };
+    try {
+      const results = await Promise.all(uploadPromises);
 
-    const todayCollection = await managerDailyReportCollection.findOne({ Date: todayDate });
+      console.log();
 
-    if (todayCollection) {
-      const update = await managerDailyReportCollection.updateOne(
-        { Date: todayDate },
-        {
-          $push: { dailyReport: dailyReportForManager },
-        },
-      );
-      return res.send(update);
+      if (role === 'user') {
+        const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
+        console.log(user);
+    
+        const dailyReport = {
+          job_name: project.Project_Name,
+          job_id: project.Project_id,
+          employee_name: user.First_Name + ' ' + user.Last_Name_and_Suffix,
+          workingUnderManagerId: workingUnderManagerId,
+          date: new Date,
+          weaitherCondition: newWeather,
+          activity: activity,
+          rental: rental,
+          isInjury: isInjury,
+          injury_img: results[0].url,
+          progress_img: results[1].url,
+          eod_img: results[2].url,
+          receipt_img: receipt_img,
+        };
+    
+        const todayCollection = await dailyReportCollection.findOne({ Date: todayDate });
+    
+        if (todayCollection) {
+          const update = await dailyReportCollection.updateOne(
+            { Date: todayDate },
+            {
+              $push: { dailyReport: dailyReport },
+            },
+          );
+          return res.send(update);
+        }
+        else {
+          const create = await dailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReport] })
+          return res.send(create);
+        }
+      }
+      else {
+        const manager = await adminCollection.findOne({ ID: userId });
+    
+        const dailyReportForManager = {
+          job_name: project.Project_Name,
+          job_id: project.Project_id,
+          employee_name: manager.Employee_First_Name + ' ' + manager.Employee_Last_Name_and_Suffix,
+          date: new Date,
+          weaitherCondition: newWeather,
+          activity: activity,
+          manpower: {
+            employee: employee,
+            hours: hours,
+            injured: injured,
+          },
+          rental: rental,
+          isInjury: false,
+          injury_img: results[0].url,
+          progress_img: results[1].url,
+          eod_img: results[2].url,
+          receipt_img: receipt_img,
+        };
+    
+        const todayCollection = await managerDailyReportCollection.findOne({ Date: todayDate });
+    
+        if (todayCollection) {
+          const update = await managerDailyReportCollection.updateOne(
+            { Date: todayDate },
+            {
+              $push: { dailyReport: dailyReportForManager },
+            },
+          );
+          return res.send(update);
+        }
+        else {
+          const create = await managerDailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReportForManager] })
+          return res.send(create);
+        }
+      }
+    } catch (error) {
+      res.status(500).json(error);
     }
-    else {
-      const create = await managerDailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReportForManager] })
-      return res.send(create);
-    }
-  }
+  });
+
+ 
 })
 
 app.get('/users', async (req, res) => {
