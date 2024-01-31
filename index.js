@@ -12,8 +12,6 @@ const multer = require('multer');
 const AWS = require('aws-sdk');
 const pdf = require('html-pdf');
 
-// const cloudinary = require('cloudinary').v2;
-
 app.use(cors())
 app.use(express.json())
 
@@ -23,12 +21,6 @@ AWS.config.update({
   region: process.env.AWS_REGION,
 });
 const s3 = new AWS.S3();
-
-// cloudinary.config({ 
-//   cloud_name: 'deqkxg249', 
-//   api_key: '291618369758335', 
-//   api_secret: '6n-UyPBSm9AEMCJ_9vA5XOqJ1Ak' 
-// });
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -85,22 +77,6 @@ app.post('/uploadImage', upload, async (req, res) => {
     console.log('Image uploaded successfully. S3 Object URL:', data.Location);
     res.json({ message: 'Image uploaded successfully', url: data.Location });
   });
-
-  // try {
-  //   // Assuming you have the image path from flatterflow in the request
-  //   const imagePath = req.file.location;
-  //   console.log(req)
-
-  //   // Upload the image to Cloudinary
-  //   const uploadResult = await cloudinary.uploader.upload(imagePath);
-
-  // const insertImage = await imageCollection.create({ cloudinaryUrl: uploadResult})
-  //   res.send({ imageUrl: uploadResult.secure_url });
-
-  // } catch (error) {
-  //   console.error('Error uploading image to Cloudinary:', error);
-  //   res.status(500).json({ error: 'Internal Server Error' });
-  // }
 });
 
 // --------------------------daynamic_Pdf_Create------------------------
@@ -131,28 +107,7 @@ app.post('/uploadImage', upload, async (req, res) => {
 //   }
 // })
 
-// app.get('/createPdf', async(req, res)=>{
-//   const value = req.query.value;
-//   let html = fs.readFileSync('./index.html','utf8');
-//   const option = {
-//     format : 'Letter'
-//   }
-//   let mapObj ={
-//     '{{time}}': value,
-//   }
-//   html = html.replace(/{{time}}/gi, (matched)=>{return mapObj[matched]});
-//   const data = pdf.create(html,option).toFile('./invoice.pdf', function(err, resp){
-//     if(err){
-//       console.log(err);
-//     }
-//     const pdfFilePath = path.join(__dirname, 'invoice.pdf');
-//     res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
 
-//       // Send the PDF file as a stream
-//       const fileStream = fs.createReadStream(pdfFilePath);
-//       fileStream.pipe(res);
-//   })
-// })
 
 app.get('/createPdf', async (req, res) => {
   const value = req.query.value;
