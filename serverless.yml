@@ -1,0 +1,13 @@
+service: pdf-generator
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+
+functions:
+  generatePdf:
+    handler: handler.generatePdf
+    events:
+      - http:
+          path: createPdf
+          method: get

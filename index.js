@@ -10,9 +10,10 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const multer = require('multer');
 const AWS = require('aws-sdk');
-const pdf = require('html-pdf');
 const { PassThrough } = require('stream');
 const PDFDocument = require('pdfkit');
+const dynamicHtmlToPdf = require('dynamic-html-to-pdf').default;
+
 
 app.use(cors())
 app.use(express.json())
@@ -138,59 +139,277 @@ app.post('/uploadImage', (req, res) => {
 
 // --------------------------daynamic_Pdf_Create------------------------
 
+const data = {
+  "job_name": "807 - City of Temecula - Citywide Concrete Repairs",
+  "job_id": 808,
+  "employee_name": "Tobias Wildman",
+  "date": "2024-02-02T06:20:11.295Z",
+  "name": "Temecula",
+  "region": "California",
+  "country": "United States of America",
+  "temp_c": 6.3,
+  "injury_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808133-1200px-Node.js_logo.svg.png",
+  "progress_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808137-_.jpg",
+  "eod_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg"
+};
+
 app.get('/createPdf', async (req, res) => {
   try {
-    const doc = new PDFDocument();
-    const pdfBuffer = [];
-    const dataFromDatabase = 'rayhan';
-    const imageLink = 'https://loamic-media.s3.us-east-2.amazonaws.com/1706682098774-1200px-Node.js_logo.svg.png';
+    // Your data
+    const data = {
+      "job_name": "807 - City of Temecula - Citywide Concrete Repairs",
+      "job_id": 808,
+      "employee_name": "Tobias Wildman",
+      "date": "2024-02-02T06:20:11.295Z",
+      "name": "Temecula",
+      "region": "California",
+      "country": "United States of America",
+      "temp_c": 6.3,
+      "injury_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808133-1200px-Node.js_logo.svg.png",
+      "progress_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808137-_.jpg",
+      "eod_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg"
+    };
 
-    doc.on('data', chunk => pdfBuffer.push(chunk));
-    doc.on('end', async () => {
-      // Upload the PDF buffer to S3
-      const params = {
-        Bucket: 'loamic-media',
-        Key: 'invoice.pdf',
-        Body: Buffer.concat(pdfBuffer),
-        ContentType: 'application/pdf',
-      };
+    const htmlContent = `
+      <html>
+        <head>
+          <style>
+            body {
+              font-size: 16px;
+            }
+            .underline {
+              text-decoration: underline;
+            }
+            .center {
+              text-align: center;
+            }
+            .indent {
+              margin-left: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="center underline">Job Information</div>
+          <div class="indent">Job Name: ${data.job_name}</div>
+          <div class="indent">Job ID: ${data.job_id}</div>
+          <div class="indent">Employee Name: ${data.employee_name}</div>
+          <div class="indent">Date: ${data.date}</div>
 
-      try {
-        await s3.upload(params).promise();
+          <div class="center underline">Location Information</div>
+          <div class="indent">Name: ${data.name}</div>
+          <div class="indent">Region: ${data.region}</div>
+          <div class="indent">Country: ${data.country}</div>
 
-        // Set headers for triggering the download
-        res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
-        res.setHeader('Content-Type', 'application/pdf');
+          <div class="center underline">Temperature Information</div>
+          <div class="indent">Temperature (°C): ${data.temp_c}</div>
 
-        // Stream the S3 object directly to the response
-        const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
-        pdfStream.pipe(res);
-      } catch (uploadError) {
-        console.error(uploadError);
-        res.status(500).send('Error uploading PDF to S3');
-      }
+          <div class="center underline">Images</div>
+          <div class="indent">
+            <img src="${data.injury_img}" style="width: 300px;" alt="Proportional to width"/>
+          </div>
+          <div class="indent">
+            <img src="${data.progress_img}" style="width: 100px; height: 100px;" alt="Fit"/>
+          </div>
+          <div class="indent">
+            <img src="${data.progress_img}" style="width: 200px; height: 100px;" alt="Stretch"/>
+          </div>
+          <div class="indent">
+            <img src="${data.progress_img}" style="width: 25%;" alt="Scale"/>
+          </div>
+          <div class="indent">
+            <img src="${data.progress_img}" style="width: 100px; height: 100px; object-fit: contain;" alt="Centered"/>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const options = {
+      format: 'A4',
+    };
+
+    const pdfBuffer = await dynamicHtmlToPdf.generatePdf({
+      content: htmlContent,
+      ...options,
     });
 
-    // doc.fontSize(16).text('Hello, this is a dynamic PDF!', 100, 100);
+    // Upload the PDF to S3
+    const params = {
+      Bucket: 'your-s3-bucket-name',
+      Key: 'invoice.pdf',
+      Body: pdfBuffer,
+      ContentType: 'application/pdf',
+    };
 
-    doc.fontSize(16).text(`Hello, ${dataFromDatabase || 'Guest'}! This is a dynamic PDF!`, {
-      align: 'center',
-    });
     try {
-      const imageResponse = await axios.get(imageLink, { responseType: 'arraybuffer' });
-      const imageBuffer = Buffer.from(imageResponse.data);
-      doc.image(imageBuffer, { fit: [200, 200], align: 'center', valign: 'center' });
-    } catch (imageError) {
-      console.error('Error downloading image:', imageError);
-      // Handle error, you may want to use a default image in case of failure
-    }
+      await s3.upload(params).promise();
 
-    doc.end();
+      // Set headers for triggering the download
+      res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+      res.setHeader('Content-Type', 'application/pdf');
+
+      // Stream the S3 object directly to the response
+      const pdfStream = s3.getObject({ Bucket: 'your-s3-bucket-name', Key: 'invoice.pdf' }).createReadStream();
+      pdfStream.pipe(res);
+    } catch (uploadError) {
+      console.error(uploadError);
+      res.status(500).send('Error uploading PDF to S3');
+    }
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');
   }
 });
+
+// app.get('/createPdf', async (req, res) => {
+//   try {
+//     const doc = new PDFDocument();
+//     const pdfBuffer = [];
+
+//     doc.on('data', chunk => pdfBuffer.push(chunk));
+//     doc.on('end', async () => {
+//       // Upload the PDF buffer to S3
+//       const params = {
+//         Bucket: 'loamic-media',
+//         Key: 'invoice.pdf',
+//         Body: Buffer.concat(pdfBuffer),
+//         ContentType: 'application/pdf',
+//       };
+
+//       try {
+//         await s3.upload(params).promise();
+
+//         // Set headers for triggering the download
+//         res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+//         res.setHeader('Content-Type', 'application/pdf');
+
+//         // Stream the S3 object directly to the response
+//         const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
+//         pdfStream.pipe(res);
+//       } catch (uploadError) {
+//         console.error(uploadError);
+//         res.status(500).send('Error uploading PDF to S3');
+//       }
+//     });
+
+//     doc.fontSize(16).text('Job Information', { align: 'center', underline: true });
+//     doc.text(`Job Name: ${data.job_name}`, { indent: 20 });
+//     doc.text(`Job ID: ${data.job_id}`, { indent: 20 });
+//     doc.text(`Employee Name: ${data.employee_name}`, { indent: 20 });
+//     doc.text(`Date: ${data.date}`, { indent: 20 });
+
+//     doc.moveDown(); // Move down to create space between sections
+
+//     doc.fontSize(16).text('Location Information', { align: 'center', underline: true });
+//     doc.text(`Name: ${data.name}`, { indent: 20 });
+//     doc.text(`Region: ${data.region}`, { indent: 20 });
+//     doc.text(`Country: ${data.country}`, { indent: 20 });
+
+//     doc.moveDown();
+
+//     doc.fontSize(16).text('Temperature Information', { align: 'center', underline: true });
+//     doc.text(`Temperature (°C): ${data.temp_c}`, { indent: 20 });
+
+//     doc.moveDown();
+//     doc.fontSize(16).text('Images', { align: 'center', underline: true });
+
+//     // Use axios to download images and then convert to Buffer
+//     const imageResponse = await axios.get(data.injury_img, { responseType: 'arraybuffer' });
+//     const imageBytes = imageResponse.data;
+
+//     doc.image(imageBytes, 0, 15, { width: 300 })
+//       .text('Proportional to width', 0, 0);
+
+//     // Fit the image within the dimensions
+//     doc.image(imageBytes, 320, 15, { fit: [100, 100] })
+//       .rect(320, 15, 100, 100)
+//       .stroke()
+//       .text('Fit', 320, 0);
+
+//     // Stretch the image
+//     doc.image(imageBytes, 320, 145, { width: 200, height: 100 })
+//       .text('Stretch', 320, 130);
+
+//     // Scale the image
+//     doc.image(imageBytes, 320, 280, { scale: 0.25 })
+//       .text('Scale', 320, 265);
+
+//     // Fit the image in the dimensions, and center it both horizontally and vertically
+//     doc.image(imageBytes, 430, 15, { fit: [100, 100], align: 'center', valign: 'center' })
+//       .rect(430, 15, 100, 100).stroke()
+//       .text('Centered', 430, 0);
+
+//     doc.moveDown();
+//     doc.end();
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send('Internal Server Error');
+//   }
+// });
+
+
+// app.get('/createPdf', async (req, res) => {
+//   try {
+//     // Fetch data from the database using Mongoose
+//     const dataFromDatabase = 'rayhan'
+
+//     // Fetch image URL from the database
+//     const imageUrl =  "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg";
+
+//     // Create a PDF
+//     const doc = new PDFDocument();
+//     const pdfPath = 'output.pdf';
+
+//     // Use a writable stream to capture the PDF content
+//     const pdfBuffer = [];
+
+//     doc.on('data', chunk => pdfBuffer.push(chunk));
+//     doc.on('end', async () => {
+//       // Upload the PDF buffer to S3
+//       const params = {
+//         Bucket: 'loamic-media',
+//         Key: 'invoice.pdf',
+//         Body: Buffer.concat(pdfBuffer),
+//         ContentType: 'application/pdf',
+//       };
+
+//       try {
+//         await s3.upload(params).promise();
+
+//         // Set headers for triggering the download
+//         res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+//         res.setHeader('Content-Type', 'application/pdf');
+
+//         // Stream the S3 object directly to the response
+//         const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
+//         pdfStream.pipe(res);
+//       } catch (uploadError) {
+//         console.error(uploadError);
+//         res.status(500).send('Error uploading PDF to S3');
+//       }
+//     });
+
+//     // Customize PDF content with HTML-like text
+//     doc.fontSize(16).text(`Hello, ${dataFromDatabase.name || 'Guest'}! This is a dynamic PDF!`, {
+//       align: 'center',
+//     });
+
+//     // Download the image and add it to the PDF
+//     try {
+//       const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+//       const imageBuffer = Buffer.from(imageResponse.data);
+//       doc.image(imageBuffer, { fit: [200, 200], align: 'center', valign: 'center' });
+//     } catch (imageError) {
+//       console.error('Error downloading image:', imageError);
+//       // Handle error, you may want to use a default image in case of failure
+//     }
+
+//     doc.end();
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send('Internal Server Error');
+//   }
+// });
+
 
 // -------------------------------------------employeeClockInCard------------------------------------
 
@@ -215,7 +434,7 @@ app.get('/managerCheckIn', async (req, res) => {
   const managerID = parseInt(req.query.managerId);
   const result = await dailyRunningProject.findOne({ 'managerInfo.ID': managerID })
   if (result) {
-    return res.send(result)
+    return res.send(result);
   }
   else {
     res.send({ message: 'project not found' });
@@ -459,6 +678,10 @@ app.post('/dailyReport', async (req, res) => {
 
 app.get('/users', async (req, res) => {
   const result = await userCollection.find();
+  res.send(result);
+})
+app.get('/getManagerDailyReport', async (req, res) => {
+  const result = await managerDailyReportCollection.find();
   res.send(result);
 })
 
