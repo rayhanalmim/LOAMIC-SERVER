@@ -259,7 +259,7 @@ app.post('/employeeCheckOut', async (req, res) => {
     {
       arrayFilters: [{ 'element.currentDate': todayDate }],
       new: true,
-    })
+    });
   console.log(result);
   res.send(result)
 })
@@ -268,6 +268,7 @@ app.post('/employeeCheckOut', async (req, res) => {
 app.post('/checkIn', async (req, res) => {
   const projectIdInt = parseInt(req.query.projectId);
   const userIdInt = parseInt(req.query.userId);
+  const managerId = parseInt(req.query.managerId);
   const role = req.query.role;
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
@@ -302,7 +303,7 @@ app.post('/checkIn', async (req, res) => {
     const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
     if (!isExists) {
-      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt, ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
@@ -313,7 +314,7 @@ app.post('/checkIn', async (req, res) => {
         const update = await clockInCollection.updateOne(
           { ID: userIdInt },
           {
-            $push: { ClockInDetails: { currentDate: todayDate, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
+            $push: { ClockInDetails: { currentDate: todayDate, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
           },
         );
         return res.send(update);
@@ -328,11 +329,11 @@ app.post('/dailyReport', async (req, res) => {
   const userId = parseInt(req.query.userId);
   const projectId = parseInt(req.query.projectId);
   const role = req.query.role;
-  const { activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, workingUnderManagerId, employee, hours, injured } = req.body;
+  const { activity, rental, workingUnderManagerId, isInjury } = req.query;
+  // const { activity, rental, isInjury, date, workingUnderManagerId, employee, hours, injured } = req.body;
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
   const todayDate = dateString.substring(0, 10);
-  console.log(userId, projectId, role, activity, rental, isInjury, injury_img, progress_img, eod_img, receipt_img, date, todayDate);
 
   const project = await projectCollection.findOne({ Project_id: projectId }, { Project_id: 1, Project_Name: 1, _id: 0, latitude: 1, longitude: 1 });
   const newWeatherInfo = await axios.get(`https://api.weatherapi.com/v1/current.json?q=${project.latitude},${project.longitude}&key=${process.env.SECRETKEY}`);
@@ -380,7 +381,7 @@ app.post('/dailyReport', async (req, res) => {
       if (role === 'user') {
         const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
         console.log(user);
-    
+
         const dailyReport = {
           job_name: project.Project_Name,
           job_id: project.Project_id,
@@ -394,11 +395,10 @@ app.post('/dailyReport', async (req, res) => {
           injury_img: results[0].url,
           progress_img: results[1].url,
           eod_img: results[2].url,
-          receipt_img: receipt_img,
         };
-    
+
         const todayCollection = await dailyReportCollection.findOne({ Date: todayDate });
-    
+
         if (todayCollection) {
           const update = await dailyReportCollection.updateOne(
             { Date: todayDate },
@@ -415,7 +415,7 @@ app.post('/dailyReport', async (req, res) => {
       }
       else {
         const manager = await adminCollection.findOne({ ID: userId });
-    
+
         const dailyReportForManager = {
           job_name: project.Project_Name,
           job_id: project.Project_id,
@@ -424,20 +424,19 @@ app.post('/dailyReport', async (req, res) => {
           weaitherCondition: newWeather,
           activity: activity,
           manpower: {
-            employee: employee,
-            hours: hours,
-            injured: injured,
+            employee: "employee",
+            hours: "hours",
+            injured: "injured",
           },
           rental: rental,
           isInjury: false,
           injury_img: results[0].url,
           progress_img: results[1].url,
           eod_img: results[2].url,
-          receipt_img: receipt_img,
         };
-    
+
         const todayCollection = await managerDailyReportCollection.findOne({ Date: todayDate });
-    
+
         if (todayCollection) {
           const update = await managerDailyReportCollection.updateOne(
             { Date: todayDate },
@@ -456,8 +455,6 @@ app.post('/dailyReport', async (req, res) => {
       res.status(500).json(error);
     }
   });
-
- 
 })
 
 app.get('/users', async (req, res) => {
