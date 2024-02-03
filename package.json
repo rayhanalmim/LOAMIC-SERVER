@@ -11,8 +11,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@pipedream/pdfmonkey": "^0.0.3",
     "aws-sdk": "^2.1547.0",
     "axios": "^1.6.3",
+    "chrome-aws-lambda": "^6",
     "cloudinary": "^2.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -24,9 +26,12 @@
     "multer-s3": "^3.0.1",
     "path": "^0.12.7",
     "pdfkit": "^0.14.0",
-    "puppeteer": "^21.11.0",
-    "puppeteer-core": "^21.10.0",
+    "phantomjs-prebuilt": "^2.1.16",
+    "puppeteer-core": "^6",
     "stream": "^0.0.2",
     "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "puppeteer": "^21.11.0"
   }
 }

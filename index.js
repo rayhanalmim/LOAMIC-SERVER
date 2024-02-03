@@ -7,14 +7,16 @@ const axios = require('axios');
 require('dotenv').config()
 const fs = require('fs');
 const path = require('path');
-const puppeteer = require('puppeteer');
 const multer = require('multer');
 const AWS = require('aws-sdk');
-const { PassThrough } = require('stream');
 const PDFDocument = require('pdfkit');
-const dynamicHtmlToPdf = require('dynamic-html-to-pdf').default;
-const { PdfDocument } = require("@ironsoftware/ironpdf");
 const { Writable } = require("stream");
+const pdf = require('html-pdf');
+// const puppeteer = require('puppeteer-core');
+
+const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer-core');
+
 app.use(cors())
 app.use(express.json())
 
@@ -66,6 +68,95 @@ const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongo
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { strict: false }));
 
+// ---------------------------------------createPDf?
+
+app.get('/createPdf', async (req, res) => {
+  try {
+    // Fetch data from the database using Mongoose
+    const dataFromDatabase = { name: 'rayhan' };
+
+    // Fetch image URL from the database
+    const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg";
+
+    // Customize HTML content
+    const htmlContent = `
+      <html>
+        <head>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              text-align: center;
+            }
+            .header {
+              font-size: 20px;
+              margin-bottom: 20px;
+            }
+            .image-container {
+              margin-top: 20px;
+            }
+            img {
+              max-width: 100%;
+              max-height: 100%;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            Hello, ${dataFromDatabase.name || 'Guest'}! This is a dynamic PDF!
+          </div>
+          <div class="image-container">
+            <img src="${imageUrl}" alt="Image">
+          </div>
+        </body>
+      </html>
+    `;
+
+    process.env.PHANTOMJS_EXECUTABLE = './node_modules/phantomjs-prebuilt/lib/phantom/bin/phantomjs';
+
+    // Options for pdf creation
+    const pdfOptions = {
+      format: 'Letter',
+      orientation: 'portrait',
+    };
+
+    // Create a PDF
+    pdf.create(htmlContent, pdfOptions).toBuffer(async (err, buffer) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send('Error generating PDF');
+        return;
+      }
+
+      // Upload the PDF buffer to S3
+      const params = {
+        Bucket: 'loamic-media',
+        Key: 'invoice.pdf',
+        Body: buffer,
+        ContentType: 'application/pdf',
+      };
+
+      try {
+        await s3.upload(params).promise();
+
+        // Set headers for triggering the download
+        res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+        res.setHeader('Content-Type', 'application/pdf');
+
+        // Stream the S3 object directly to the response
+        const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
+        pdfStream.pipe(res);
+      } catch (uploadError) {
+        console.error(uploadError);
+        res.status(500).send('Error uploading PDF to S3');
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
 // -----------------------------imageUploadApi-------------------------------
 // upload.single('imagePath'),
 
@@ -115,94 +206,111 @@ app.post('/uploadImage', (req, res) => {
   });
 });
 
-// app.post('/uploadImage', upload, async (req, res) => {
 
-//   const params = {
-//     Bucket: 'loamic-media',
-//     Key: Date.now().toString() + '-' + req.file.originalname,
-//     Body: req.file.buffer,
-//     ACL: 'public-read', // Set the appropriate ACL for your use case
-//     ContentType: req.file.mimetype,
-//   };
-
-//   s3.upload(params, (err, data) => {
-//     if (err) {
-//       console.error('Error uploading to S3:', err);
-//       return res.status(500).json({ error: 'Failed to upload to S3' });
-//     }
-//     console.log(data);
-
-//     console.log('Image uploaded successfully. S3 Object URL:', data.Location);
-//     res.json({ message: 'Image uploaded successfully', url: data.Location });
-//   });
-// });
 
 // --------------------------daynamic_Pdf_Create------------------------
 
+// const data = {
+//   "job_name": "807 - City of Temecula - Citywide Concrete Repairs",
+//   "job_id": 808,
+//   "employee_name": "Tobias Wildman",
+//   "date": "2024-02-02T06:20:11.295Z",
+//   "name": "Temecula",
+//   "region": "California",
+//   "country": "United States of America",
+//   "temp_c": 6.3,
+//   "injury_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808133-1200px-Node.js_logo.svg.png",
+//   "progress_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808137-_.jpg",
+//   "eod_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg"
+// };
+// app.get('/createPdf', async (req, res) => {
+//   try {
+//     // Fetch data from the database using Mongoose
+//     const dataFromDatabase = 'rayhan'
 
+//     // Fetch image URL from the database
+//     const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg";
 
-app.get('/createPdf', async (req, res) => {
-  try {
-    // Fetch data from the database using Mongoose
-    const dataFromDatabase = 'rayhan'
+//     // Create a PDF
+//     const doc = new PDFDocument();
 
-    // Fetch image URL from the database
-    const imageUrl =  "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg";
+//     // Use a writable stream to capture the PDF content
+//     const pdfBuffer = [];
 
-    // Create a PDF
-    const doc = new PDFDocument();
-    const pdfPath = 'output.pdf';
+//     doc.on('data', chunk => pdfBuffer.push(chunk));
+//     doc.on('end', async () => {
+//       // Upload the PDF buffer to S3
+//       const params = {
+//         Bucket: 'loamic-media',
+//         Key: 'invoice.pdf',
+//         Body: Buffer.concat(pdfBuffer),
+//         ContentType: 'application/pdf',
+//       };
 
-    // Use a writable stream to capture the PDF content
-    const pdfBuffer = [];
+//       try {
+//         await s3.upload(params).promise();
 
-    doc.on('data', chunk => pdfBuffer.push(chunk));
-    doc.on('end', async () => {
-      // Upload the PDF buffer to S3
-      const params = {
-        Bucket: 'loamic-media',
-        Key: 'invoice.pdf',
-        Body: Buffer.concat(pdfBuffer),
-        ContentType: 'application/pdf',
-      };
+//         // Set headers for triggering the download
+//         res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+//         res.setHeader('Content-Type', 'application/pdf');
 
-      try {
-        await s3.upload(params).promise();
+//         // Stream the S3 object directly to the response
+//         const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
+//         pdfStream.pipe(res);
+//       } catch (uploadError) {
+//         console.error(uploadError);
+//         res.status(500).send('Error uploading PDF to S3');
+//       }
+//     });
 
-        // Set headers for triggering the download
-        res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
-        res.setHeader('Content-Type', 'application/pdf');
+//     // // Customize PDF content with HTML-like text
+//     // doc.fontSize(16).text(`Hello, ${dataFromDatabase.name || 'Guest'}! This is a dynamic PDF!`, {
+//     //   align: 'center',
+//     // });
 
-        // Stream the S3 object directly to the response
-        const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
-        pdfStream.pipe(res);
-      } catch (uploadError) {
-        console.error(uploadError);
-        res.status(500).send('Error uploading PDF to S3');
-      }
-    });
+//     // // Download the image and add it to the PDF
+//     // try {
+//     //   const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+//     //   const imageBuffer = Buffer.from(imageResponse.data);
+//     //   doc.image(imageBuffer, { fit: [200, 200], align: 'center', valign: 'center' });
+//     // } catch (imageError) {
+//     //   console.error('Error downloading image:', imageError);
+//     //   // Handle error, you may want to use a default image in case of failure
+//     // }
 
-    // Customize PDF content with HTML-like text
-    doc.fontSize(16).text(`Hello, ${dataFromDatabase.name || 'Guest'}! This is a dynamic PDF!`, {
-      align: 'center',
-    });
+//     // doc.end();
 
-    // Download the image and add it to the PDF
-    try {
-      const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const imageBuffer = Buffer.from(imageResponse.data);
-      doc.image(imageBuffer, { fit: [200, 200], align: 'center', valign: 'center' });
-    } catch (imageError) {
-      console.error('Error downloading image:', imageError);
-      // Handle error, you may want to use a default image in case of failure
-    }
+//         doc.fontSize(16).text('Job Information', { align: 'center', underline: true });
+//     doc.text(`Job Name: ${data.job_name}`, { indent: 20 });
+//     doc.text(`Job ID: ${data.job_id}`, { indent: 20 });
+//     doc.text(`Employee Name: ${data.employee_name}`, { indent: 20 });
+//     doc.text(`Date: ${data.date}`, { indent: 20 });
 
-    doc.end();
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Internal Server Error');
-  }
-});
+//     doc.moveDown(); // Move down to create space between sections
+
+//     doc.fontSize(16).text('Location Information', { align: 'center', underline: true });
+//     doc.text(`Name: ${data.name}`, { indent: 20 });
+//     doc.text(`Region: ${data.region}`, { indent: 20 });
+//     doc.text(`Country: ${data.country}`, { indent: 20 });
+
+//     doc.moveDown();
+
+//     doc.fontSize(16).text('Temperature Information', { align: 'center', underline: true });
+//     doc.text(`Temperature (°C): ${data.temp_c}`, { indent: 20 });
+
+//     doc.moveDown();
+//     doc.fontSize(16).text('Images', { align: 'center', underline: true });
+
+    
+
+//     doc.moveDown();
+//     doc.end();
+   
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send('Internal Server Error');
+//   }
+// });
 
 
 // -------------------------------------------employeeClockInCard------------------------------------
