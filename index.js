@@ -5,17 +5,9 @@ const app = express();
 const port = process.env.PORT || 5000;
 const axios = require('axios');
 require('dotenv').config()
-const fs = require('fs');
-const path = require('path');
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const PDFDocument = require('pdfkit');
-const { Writable } = require("stream");
-const pdf = require('html-pdf');
-// const puppeteer = require('puppeteer-core');
-
-const chromium = require('chrome-aws-lambda');
-const puppeteer = require('puppeteer-core');
 
 app.use(cors())
 app.use(express.json())
@@ -26,10 +18,6 @@ AWS.config.update({
   region: process.env.AWS_REGION,
 });
 const s3 = new AWS.S3();
-
-// const upload = multer({
-//   storage: multer.memoryStorage(),
-// }).single('imagePath');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -67,94 +55,6 @@ const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.S
 const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongoose.Schema({}, { strict: false }));
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { strict: false }));
-
-// ---------------------------------------createPDf?
-
-app.get('/createPdf', async (req, res) => {
-  try {
-    // Fetch data from the database using Mongoose
-    const dataFromDatabase = { name: 'rayhan' };
-
-    // Fetch image URL from the database
-    const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg";
-
-    // Customize HTML content
-    const htmlContent = `
-      <html>
-        <head>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              text-align: center;
-            }
-            .header {
-              font-size: 20px;
-              margin-bottom: 20px;
-            }
-            .image-container {
-              margin-top: 20px;
-            }
-            img {
-              max-width: 100%;
-              max-height: 100%;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            Hello, ${dataFromDatabase.name || 'Guest'}! This is a dynamic PDF!
-          </div>
-          <div class="image-container">
-            <img src="${imageUrl}" alt="Image">
-          </div>
-        </body>
-      </html>
-    `;
-
-    process.env.PHANTOMJS_EXECUTABLE = './node_modules/phantomjs-prebuilt/lib/phantom/bin/phantomjs';
-
-    // Options for pdf creation
-    const pdfOptions = {
-      format: 'Letter',
-      orientation: 'portrait',
-    };
-
-    // Create a PDF
-    pdf.create(htmlContent, pdfOptions).toBuffer(async (err, buffer) => {
-      if (err) {
-        console.error(err);
-        res.status(500).send('Error generating PDF');
-        return;
-      }
-
-      // Upload the PDF buffer to S3
-      const params = {
-        Bucket: 'loamic-media',
-        Key: 'invoice.pdf',
-        Body: buffer,
-        ContentType: 'application/pdf',
-      };
-
-      try {
-        await s3.upload(params).promise();
-
-        // Set headers for triggering the download
-        res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
-        res.setHeader('Content-Type', 'application/pdf');
-
-        // Stream the S3 object directly to the response
-        const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
-        pdfStream.pipe(res);
-      } catch (uploadError) {
-        console.error(uploadError);
-        res.status(500).send('Error uploading PDF to S3');
-      }
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Internal Server Error');
-  }
-});
 
 
 // -----------------------------imageUploadApi-------------------------------
@@ -210,107 +110,127 @@ app.post('/uploadImage', (req, res) => {
 
 // --------------------------daynamic_Pdf_Create------------------------
 
-// const data = {
-//   "job_name": "807 - City of Temecula - Citywide Concrete Repairs",
-//   "job_id": 808,
-//   "employee_name": "Tobias Wildman",
-//   "date": "2024-02-02T06:20:11.295Z",
-//   "name": "Temecula",
-//   "region": "California",
-//   "country": "United States of America",
-//   "temp_c": 6.3,
-//   "injury_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808133-1200px-Node.js_logo.svg.png",
-//   "progress_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808137-_.jpg",
-//   "eod_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg"
-// };
-// app.get('/createPdf', async (req, res) => {
-//   try {
-//     // Fetch data from the database using Mongoose
-//     const dataFromDatabase = 'rayhan'
+const data = {
+  "job_name": "807 - City of Temecula - Citywide Concrete Repairs",
+  "job_id": 808,
+  "employee_name": "Tobias Wildman",
+  "date": "2024-02-02T06:20:11.295Z",
+  "name": "Temecula",
+  "region": "California",
+  "country": "United States of America",
+  "temp_c": 6.3,
+  "injury_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808133-1200px-Node.js_logo.svg.png",
+  "progress_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808137-_.jpg",
+  "eod_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg"
+};
+app.get('/createPdf', async (req, res) => {
+  try {
+    // Fetch data from the database using Mongoose
+    const dataFromDatabase = 'rayhan'
 
-//     // Fetch image URL from the database
-//     const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg";
+    // Fetch image URL from the database
+    const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706962846030-IMG-20240203-WA0000__1_-removebg.png";
 
-//     // Create a PDF
-//     const doc = new PDFDocument();
+    // Create a PDF
+    const doc = new PDFDocument();
 
-//     // Use a writable stream to capture the PDF content
-//     const pdfBuffer = [];
+    // Use a writable stream to capture the PDF content
+    const pdfBuffer = [];
 
-//     doc.on('data', chunk => pdfBuffer.push(chunk));
-//     doc.on('end', async () => {
-//       // Upload the PDF buffer to S3
-//       const params = {
-//         Bucket: 'loamic-media',
-//         Key: 'invoice.pdf',
-//         Body: Buffer.concat(pdfBuffer),
-//         ContentType: 'application/pdf',
-//       };
+    doc.on('data', chunk => pdfBuffer.push(chunk));
+    doc.on('end', async () => {
+      // Upload the PDF buffer to S3
+      const params = {
+        Bucket: 'loamic-media',
+        Key: 'invoice.pdf',
+        Body: Buffer.concat(pdfBuffer),
+        ContentType: 'application/pdf',
+      };
 
-//       try {
-//         await s3.upload(params).promise();
+      try {
+        await s3.upload(params).promise();
 
-//         // Set headers for triggering the download
-//         res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
-//         res.setHeader('Content-Type', 'application/pdf');
+        // Set headers for triggering the download
+        res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+        res.setHeader('Content-Type', 'application/pdf');
 
-//         // Stream the S3 object directly to the response
-//         const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
-//         pdfStream.pipe(res);
-//       } catch (uploadError) {
-//         console.error(uploadError);
-//         res.status(500).send('Error uploading PDF to S3');
-//       }
-//     });
+        // Stream the S3 object directly to the response
+        const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
+        pdfStream.pipe(res);
+      } catch (uploadError) {
+        console.error(uploadError);
+        res.status(500).send('Error uploading PDF to S3');
+      }
+    });
 
-//     // // Customize PDF content with HTML-like text
-//     // doc.fontSize(16).text(`Hello, ${dataFromDatabase.name || 'Guest'}! This is a dynamic PDF!`, {
-//     //   align: 'center',
-//     // });
+    const distanceMargin = 18;
+    doc
+      .fillAndStroke('#0e8cc3')
+      .lineWidth(20)
+      .lineJoin('round')
+      .rect(
+        distanceMargin,
+        distanceMargin,
+        doc.page.width - distanceMargin * 2,
+        doc.page.height - distanceMargin * 2,
+      )
+      .stroke();
 
-//     // // Download the image and add it to the PDF
-//     // try {
-//     //   const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-//     //   const imageBuffer = Buffer.from(imageResponse.data);
-//     //   doc.image(imageBuffer, { fit: [200, 200], align: 'center', valign: 'center' });
-//     // } catch (imageError) {
-//     //   console.error('Error downloading image:', imageError);
-//     //   // Handle error, you may want to use a default image in case of failure
-//     // }
+    try {
+      const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const imageBuffer = Buffer.from(imageResponse.data);
+      doc.image(
+        imageBuffer,
+        doc.page.width / 2 - 190 / 2,
+        60,
+        {
+          fit: [190, 100],
+          align: 'center',
+        }
+      );
+    } catch (imageError) {
+      console.error('Error downloading image:', imageError);
+      // Handle error, you may want to use a default image in case of failure
+    }
 
-//     // doc.end();
+    doc.moveDown();
+    doc.moveDown();
+    doc.moveDown();
+    doc.moveDown();
+    doc.moveDown();
+    doc.moveDown();
+    doc.moveDown();
 
-//         doc.fontSize(16).text('Job Information', { align: 'center', underline: true });
-//     doc.text(`Job Name: ${data.job_name}`, { indent: 20 });
-//     doc.text(`Job ID: ${data.job_id}`, { indent: 20 });
-//     doc.text(`Employee Name: ${data.employee_name}`, { indent: 20 });
-//     doc.text(`Date: ${data.date}`, { indent: 20 });
+    doc.font('Times-Roman').fontSize(17).fill('##C2272F').text('Job Information', { align: 'center', underline: true });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${data.job_name}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job ID: ${data.job_id}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Employee Name: ${data.employee_name}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${data.date}`, { indent: 14 });
 
-//     doc.moveDown(); // Move down to create space between sections
+    doc.moveDown(); // Move down to create space between sections
 
-//     doc.fontSize(16).text('Location Information', { align: 'center', underline: true });
-//     doc.text(`Name: ${data.name}`, { indent: 20 });
-//     doc.text(`Region: ${data.region}`, { indent: 20 });
-//     doc.text(`Country: ${data.country}`, { indent: 20 });
+    doc.font('Times-Roman').fontSize(17).fill('##C2272F').text('Location Information', { align: 'center', underline: true });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Name: ${data.name}`, { indent: 20 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Region: ${data.region}`, { indent: 20 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Country: ${data.country}`, { indent: 20 });
 
-//     doc.moveDown();
+    doc.moveDown();
 
-//     doc.fontSize(16).text('Temperature Information', { align: 'center', underline: true });
-//     doc.text(`Temperature (°C): ${data.temp_c}`, { indent: 20 });
+    doc.font('Times-Roman').fontSize(16).fill('##C2272F').text('Temperature Information', { align: 'center', underline: true });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${data.temp_c}`, { indent: 20 });
 
-//     doc.moveDown();
-//     doc.fontSize(16).text('Images', { align: 'center', underline: true });
+    doc.moveDown();
 
-    
 
-//     doc.moveDown();
-//     doc.end();
-   
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).send('Internal Server Error');
-//   }
-// });
+
+    doc.moveDown();
+    doc.end();
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
 
 // -------------------------------------------employeeClockInCard------------------------------------
@@ -352,7 +272,7 @@ app.post('/managerCheckOut', async (req, res) => {
 
   const project = await dailyRunningProject.findOne({ 'managerInfo.ID': managerID })
   if (project) {
-    const insert = await managerCheckInCollection.create({ project, checkOutDate: todayDate, checkOutTime: currentTime });
+    const insert = await managerCheckInCollection.create({ projectData: project, checkOutDate: todayDate, checkOutTime: currentTime });
     const remove = await dailyRunningProject.deleteOne({ 'managerInfo.ID': managerID });
     console.log(remove)
     return res.send(remove);
@@ -403,6 +323,7 @@ app.post('/checkIn', async (req, res) => {
 
   if (role === 'manager') {
     const manager = await adminCollection.findOne({ ID: userIdInt }, { ID: 1, Employee_First_Name: 1, Employee_Last_Name_and_Suffix: 1, Role: 1, _id: 0 });
+    console.log(manager)
 
     const isExist = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt });
     if (isExist) {
@@ -536,13 +457,20 @@ app.post('/dailyReport', async (req, res) => {
       }
       else {
         const manager = await adminCollection.findOne({ ID: userId });
+        const clockInfo = await managerCheckInCollection.findOne({'projectData.managerInfo.ID': userId, checkOutDate: todayDate });
+        console.log(clockInfo);
+        console.log(clockInfo.projectData);
 
+        console.log(clockInfo.projectData.checkInTime)
+        
         const dailyReportForManager = {
           job_name: project.Project_Name,
           job_id: project.Project_id,
           employee_name: manager.Employee_First_Name + ' ' + manager.Employee_Last_Name_and_Suffix,
           date: new Date,
           weaitherCondition: newWeather,
+          clockInAt: clockInfo.projectData.checkInTime,
+          ClockOutAt: clockInfo.checkOutTime,        
           activity: activity,
           manpower: {
             employee: "employee",
