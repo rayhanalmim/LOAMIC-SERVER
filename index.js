@@ -110,37 +110,29 @@ app.post('/uploadImage', (req, res) => {
 
 // --------------------------daynamic_Pdf_Create------------------------
 
-// app.get('/test', async (req, res) => {const dateObj = new Date();
-//   const dateString = dateObj.toISOString();
-//   const todayDate = dateString.substring(0, 10);
-//   const managerEmail = req.query.managerEmail;
-//   const dailyReportCol = await managerDailyReportCollection.findOne({
-//     $and: [
-//       { Date: todayDate },
-//       { dailyReport: { $elemMatch: { email: managerEmail } } }
-//     ]
-//   });
-//   if (!dailyReportCol) {
-//     return res.send({ message: 'no daily report found for this manager in this date' });
-//   }
-//   const managerDataArray = dailyReportCol.dailyReport.filter(entry => entry.email === managerEmail);
-//   res.send(managerDataArray[0])
-// })
+app.get('/test', async (req, res) => {
+  const dateObj = new Date();
+  const dateString = dateObj.toISOString();
+  const todayDate = dateString.substring(0, 10);
+  const userId = parseInt(req.query.userId);
+  console.log(userId, todayDate);
+  const clockInfo = await clockInCollection.findOne({
+    $and: [
+      { ID: userId },
+      { ClockInDetails: { $elemMatch: { currentDate : todayDate } } }
+    ]
+  });
+  console.log(clockInfo)
+
+  if(!clockInfo){
+    return res.send({message: 'no data found in today checking collection'});
+  };
+  
+  const employeeClockingInfo = clockInfo.ClockInDetails.filter(entry => entry.currentDate === todayDate);
+  res.send(employeeClockingInfo)
+})
 // http://localhost:5000/downloadManagerDailyReport?managerEmail=twildman@loamicbuilders.com
 
-const data = {
-  "job_name": "807 - City of Temecula - Citywide Concrete Repairs",
-  "job_id": 808,
-  "employee_name": "Tobias Wildman",
-  "date": "2024-02-02T06:20:11.295Z",
-  "name": "Temecula",
-  "region": "California",
-  "country": "United States of America",
-  "temp_c": 6.3,
-  "injury_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808133-1200px-Node.js_logo.svg.png",
-  "progress_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808137-_.jpg",
-  "eod_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg"
-};
 app.get('/downloadManagerDailyReport', async (req, res) => {
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
@@ -168,34 +160,12 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
     // Create a PDF
     const doc = new PDFDocument();
 
+    // Set headers for triggering the download
+    res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+    res.setHeader('Content-Type', 'application/pdf');
+
     // Use a writable stream to capture the PDF content
-    const pdfBuffer = [];
-
-    doc.on('data', chunk => pdfBuffer.push(chunk));
-    doc.on('end', async () => {
-      // Upload the PDF buffer to S3
-      const params = {
-        Bucket: 'loamic-media',
-        Key: 'invoice.pdf',
-        Body: Buffer.concat(pdfBuffer),
-        ContentType: 'application/pdf',
-      };
-
-      try {
-        await s3.upload(params).promise();
-
-        // Set headers for triggering the download
-        res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
-        res.setHeader('Content-Type', 'application/pdf');
-
-        // Stream the S3 object directly to the response
-        const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
-        pdfStream.pipe(res);
-      } catch (uploadError) {
-        console.error(uploadError);
-        res.status(500).send('Error uploading PDF to S3');
-      }
-    });
+    doc.pipe(res);
 
     const distanceMargin = 18;
     doc
@@ -210,81 +180,83 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
       )
       .stroke();
 
-    try {
-      const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      const imageBuffer = Buffer.from(imageResponse.data);
-      doc.image(
-        imageBuffer,
-        doc.page.width / 2 - 190 / 2,
-        60,
-        {
-          fit: [190, 100],
-          align: 'center',
-        }
-      );
-    } catch (imageError) {
-      console.error('Error downloading image:', imageError);
-      // Handle error, you may want to use a default image in case of failure
-    }
-
-    doc.moveDown();
-    doc.moveDown();
-    doc.moveDown();
-    doc.moveDown();
-    doc.moveDown();
-    doc.moveDown();
-    doc.moveDown();
-
-    doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Manager', { align: 'center'});
-    doc.moveDown();
-
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${managerData.job_name}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Manager Name: ${managerData.employee_name}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${todayDate}`, { indent: 14 });
-
-    doc.moveDown(); // Move down to create space between sections
-
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center' , underline: true});
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${managerData.weaitherCondition.condition.text}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${managerData.weaitherCondition.temp_c}`, { indent: 14 });
-
-    doc.moveDown();    
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center' , underline: true});
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${managerData.clockInAt} UTC+0`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${managerData.ClockOutAt} UTC+0`, { indent: 14 });
-
-    doc.moveDown();
-
-    doc.font('Times-Roman').fontSize(16).fill('#020617').text('Manpower', { align: 'center' , underline: true});
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total workers: Comming Soon`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total Injured: Comming Soon`, { indent: 14 });
-    doc.moveDown();
-
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center' , underline: true});
-
-    function addClickableImageLink(text, url) {
-      // Calculate the maximum width of the entire line (text + URL)
-      const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
+    
+      try {
+        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const imageBuffer = Buffer.from(imageResponse.data);
+        doc.image(
+          imageBuffer,
+          doc.page.width / 2 - 190 / 2,
+          60,
+          {
+            fit: [190, 100],
+            align: 'center',
+          }
+        );
+      } catch (imageError) {
+        console.error('Error downloading image:', imageError);
+        // Handle error, you may want to use a default image in case of failure
+      }
   
-      // Add text with a link
-      doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
-  
-      // Move down to create space for the next content
       doc.moveDown();
-  }
+      doc.moveDown();
+      doc.moveDown();
+      doc.moveDown();
+      doc.moveDown();
+      doc.moveDown();
+      doc.moveDown();
   
-  // Example usage
-  addClickableImageLink('injury_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887685-1200px-Node.js_logo.svg.png');
-  addClickableImageLink('progress_img', 'https://loamic-media.s3.us-east-2.amazonaws.com/1707026887704-hoe89yws-720.jpg');
-  addClickableImageLink('eod_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887708-_.jpg');
+      doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Manager', { align: 'center'});
+      doc.moveDown();
   
+      doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${managerData.job_name}`, { indent: 14 });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Manager Name: ${managerData.employee_name}`, { indent: 14 });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${todayDate}`, { indent: 14 });
+  
+      doc.moveDown(); // Move down to create space between sections
+  
+      doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center' , underline: true});
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${managerData.weaitherCondition.condition.text}`, { indent: 14 });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${managerData.weaitherCondition.temp_c}`, { indent: 14 });
+  
+      doc.moveDown();    
+      doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center' , underline: true});
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${managerData.clockInAt} UTC+0`, { indent: 14 });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${managerData.ClockOutAt} UTC+0`, { indent: 14 });
+  
+      doc.moveDown();
+  
+      doc.font('Times-Roman').fontSize(16).fill('#020617').text('Manpower', { align: 'center' , underline: true});
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total workers: Comming Soon`, { indent: 14 });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total Injured: Comming Soon`, { indent: 14 });
+      doc.moveDown();
+  
+      doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center' , underline: true});
+  
+      function addClickableImageLink(text, url) {
+        // Calculate the maximum width of the entire line (text + URL)
+        const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
+    
+        // Add text with a link
+        doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
+    
+        // Move down to create space for the next content
+        doc.moveDown();
+    }
+    
+    // Example usage
+    addClickableImageLink('injury_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887685-1200px-Node.js_logo.svg.png');
+    addClickableImageLink('progress_img', 'https://loamic-media.s3.us-east-2.amazonaws.com/1707026887704-hoe89yws-720.jpg');
+    addClickableImageLink('eod_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887708-_.jpg');
+    
+  
+      doc.moveDown();
+  
+  
+  
+      doc.moveDown();
 
-    doc.moveDown();
-
-
-
-    doc.moveDown();
     doc.end();
 
   } catch (error) {
@@ -292,6 +264,159 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
+
+// app.get('/downloadManagerDailyReport', async (req, res) => {
+//   const dateObj = new Date();
+//   const dateString = dateObj.toISOString();
+//   const todayDate = dateString.substring(0, 10);
+//   const managerEmail = req.query.managerEmail;
+//   const dailyReportCol = await managerDailyReportCollection.findOne({
+//     $and: [
+//       { Date: todayDate },
+//       { dailyReport: { $elemMatch: { email: managerEmail } } }
+//     ]
+//   });
+//   if (!dailyReportCol) {
+//     return res.send({ message: 'no daily report found for this manager in this date' });
+//   }
+//   const managerDataArray = dailyReportCol.dailyReport.filter(entry => entry.email === managerEmail);
+//   const managerData = managerDataArray[0];
+
+//   try {
+//     // Fetch data from the database using Mongoose
+//     const dataFromDatabase = 'rayhan'
+
+//     // Fetch image URL from the database
+//     const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706962846030-IMG-20240203-WA0000__1_-removebg.png";
+
+//     // Create a PDF
+//     const doc = new PDFDocument();
+
+//     // Use a writable stream to capture the PDF content
+//     const pdfBuffer = [];
+
+//     doc.on('data', chunk => pdfBuffer.push(chunk));
+//     doc.on('end', async () => {
+//       // Upload the PDF buffer to S3
+//       const params = {
+//         Bucket: 'loamic-media',
+//         Key: 'invoice.pdf',
+//         Body: Buffer.concat(pdfBuffer),
+//         ContentType: 'application/pdf',
+//       };
+
+//       try {
+//         await s3.upload(params).promise();
+
+//         // Set headers for triggering the download
+//         res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
+//         res.setHeader('Content-Type', 'application/pdf');
+
+//         // Stream the S3 object directly to the response
+//         const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
+//         pdfStream.pipe(res);
+//       } catch (uploadError) {
+//         console.error(uploadError);
+//         res.status(500).send('Error uploading PDF to S3');
+//       }
+//     });
+
+//     const distanceMargin = 18;
+//     doc
+//       .fillAndStroke('#0e8cc3')
+//       .lineWidth(20)
+//       .lineJoin('round')
+//       .rect(
+//         distanceMargin,
+//         distanceMargin,
+//         doc.page.width - distanceMargin * 2,
+//         doc.page.height - distanceMargin * 2,
+//       )
+//       .stroke();
+
+//     try {
+//       const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+//       const imageBuffer = Buffer.from(imageResponse.data);
+//       doc.image(
+//         imageBuffer,
+//         doc.page.width / 2 - 190 / 2,
+//         60,
+//         {
+//           fit: [190, 100],
+//           align: 'center',
+//         }
+//       );
+//     } catch (imageError) {
+//       console.error('Error downloading image:', imageError);
+//       // Handle error, you may want to use a default image in case of failure
+//     }
+
+//     doc.moveDown();
+//     doc.moveDown();
+//     doc.moveDown();
+//     doc.moveDown();
+//     doc.moveDown();
+//     doc.moveDown();
+//     doc.moveDown();
+
+//     doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Manager', { align: 'center'});
+//     doc.moveDown();
+
+//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${managerData.job_name}`, { indent: 14 });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Manager Name: ${managerData.employee_name}`, { indent: 14 });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${todayDate}`, { indent: 14 });
+
+//     doc.moveDown(); // Move down to create space between sections
+
+//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center' , underline: true});
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${managerData.weaitherCondition.condition.text}`, { indent: 14 });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${managerData.weaitherCondition.temp_c}`, { indent: 14 });
+
+//     doc.moveDown();    
+//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center' , underline: true});
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${managerData.clockInAt} UTC+0`, { indent: 14 });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${managerData.ClockOutAt} UTC+0`, { indent: 14 });
+
+//     doc.moveDown();
+
+//     doc.font('Times-Roman').fontSize(16).fill('#020617').text('Manpower', { align: 'center' , underline: true});
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total workers: Comming Soon`, { indent: 14 });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total Injured: Comming Soon`, { indent: 14 });
+//     doc.moveDown();
+
+//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center' , underline: true});
+
+//     function addClickableImageLink(text, url) {
+//       // Calculate the maximum width of the entire line (text + URL)
+//       const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
+  
+//       // Add text with a link
+//       doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
+  
+//       // Move down to create space for the next content
+//       doc.moveDown();
+//   }
+  
+//   // Example usage
+//   addClickableImageLink('injury_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887685-1200px-Node.js_logo.svg.png');
+//   addClickableImageLink('progress_img', 'https://loamic-media.s3.us-east-2.amazonaws.com/1707026887704-hoe89yws-720.jpg');
+//   addClickableImageLink('eod_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887708-_.jpg');
+  
+
+//     doc.moveDown();
+
+
+
+//     doc.moveDown();
+//     doc.end();
+
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send('Internal Server Error');
+//   }
+// });
 // -------------------------------------------employeeClockInCard------------------------------------
 
 app.get('/employeeClockInCard', async (req, res) => {
@@ -482,10 +607,11 @@ app.post('/dailyReport', async (req, res) => {
       if (role === 'user') {
         const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
         console.log(user);
-
+       
         const dailyReport = {
           job_name: project.Project_Name,
           job_id: project.Project_id,
+          // clockInTime: clockInfo
           employee_name: user.First_Name + ' ' + user.Last_Name_and_Suffix,
           workingUnderManagerId: workingUnderManagerId,
           date: new Date,
