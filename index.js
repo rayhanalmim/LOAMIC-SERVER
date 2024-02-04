@@ -458,10 +458,6 @@ app.post('/dailyReport', async (req, res) => {
       else {
         const manager = await adminCollection.findOne({ ID: userId });
         const clockInfo = await managerCheckInCollection.findOne({'projectData.managerInfo.ID': userId, checkOutDate: todayDate });
-        console.log(clockInfo);
-        console.log(clockInfo.projectData);
-
-        console.log(clockInfo.projectData.checkInTime)
         
         const dailyReportForManager = {
           job_name: project.Project_Name,
@@ -470,7 +466,8 @@ app.post('/dailyReport', async (req, res) => {
           date: new Date,
           weaitherCondition: newWeather,
           clockInAt: clockInfo.projectData.checkInTime,
-          ClockOutAt: clockInfo.checkOutTime,        
+          ClockOutAt: clockInfo.checkOutTime,   
+          email: manager.email_address,     
           activity: activity,
           manpower: {
             employee: "employee",
@@ -484,21 +481,35 @@ app.post('/dailyReport', async (req, res) => {
           eod_img: results[2].url,
         };
 
-        const todayCollection = await managerDailyReportCollection.findOne({ Date: todayDate });
-
-        if (todayCollection) {
-          const update = await managerDailyReportCollection.updateOne(
+        const isDailyReportExists = await managerDailyReportCollection.findOne({
+          $and: [
             { Date: todayDate },
-            {
-              $push: { dailyReport: dailyReportForManager },
-            },
-          );
-          return res.send(update);
+            {dailyReport: { $elemMatch: { email: manager.email_address } }}
+          ]
+        });
+        console.log(isDailyReportExists);
+
+        if(!isDailyReportExists){
+          const todayCollection = await managerDailyReportCollection.findOne({ Date: todayDate });
+
+          if (todayCollection) {
+            const update = await managerDailyReportCollection.updateOne(
+              { Date: todayDate },
+              {
+                $push: { dailyReport: dailyReportForManager },
+              },
+            );
+            return res.send(update);
+          }
+          else {
+            const create = await managerDailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReportForManager] })
+            return res.send(create);
+          }
+        }else{
+          const employee_name = manager.Employee_First_Name + ' ' + manager.Employee_Last_Name_and_Suffix;
+          return res.send({massege: `${employee_name} alreday submit his daily report today`});
         }
-        else {
-          const create = await managerDailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReportForManager] })
-          return res.send(create);
-        }
+
       }
     } catch (error) {
       res.status(500).json(error);
