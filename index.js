@@ -8,6 +8,7 @@ require('dotenv').config()
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const PDFDocument = require('pdfkit');
+const fs = require('fs'); 
 
 app.use(cors())
 app.use(express.json())
@@ -29,7 +30,6 @@ const upload = multer({
 
 
 const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.tdvw5wt.mongodb.net/loamicDB?retryWrites=true&w=majority`;
-console.log(process.env.DB_PASS);
 
 mongoose.connect(uri, {
 });
@@ -106,9 +106,27 @@ app.post('/uploadImage', (req, res) => {
   });
 });
 
-
+// -------------------------------getPdf---
 
 // --------------------------daynamic_Pdf_Create------------------------
+
+// app.get('/test', async (req, res) => {const dateObj = new Date();
+//   const dateString = dateObj.toISOString();
+//   const todayDate = dateString.substring(0, 10);
+//   const managerEmail = req.query.managerEmail;
+//   const dailyReportCol = await managerDailyReportCollection.findOne({
+//     $and: [
+//       { Date: todayDate },
+//       { dailyReport: { $elemMatch: { email: managerEmail } } }
+//     ]
+//   });
+//   if (!dailyReportCol) {
+//     return res.send({ message: 'no daily report found for this manager in this date' });
+//   }
+//   const managerDataArray = dailyReportCol.dailyReport.filter(entry => entry.email === managerEmail);
+//   res.send(managerDataArray[0])
+// })
+// http://localhost:5000/downloadManagerDailyReport?managerEmail=twildman@loamicbuilders.com
 
 const data = {
   "job_name": "807 - City of Temecula - Citywide Concrete Repairs",
@@ -123,7 +141,23 @@ const data = {
   "progress_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808137-_.jpg",
   "eod_img": "https://loamic-media.s3.us-east-2.amazonaws.com/1706854808140-hoe89yws-720.jpg"
 };
-app.get('/createPdf', async (req, res) => {
+app.get('/downloadManagerDailyReport', async (req, res) => {
+  const dateObj = new Date();
+  const dateString = dateObj.toISOString();
+  const todayDate = dateString.substring(0, 10);
+  const managerEmail = req.query.managerEmail;
+  const dailyReportCol = await managerDailyReportCollection.findOne({
+    $and: [
+      { Date: todayDate },
+      { dailyReport: { $elemMatch: { email: managerEmail } } }
+    ]
+  });
+  if (!dailyReportCol) {
+    return res.send({ message: 'no daily report found for this manager in this date' });
+  }
+  const managerDataArray = dailyReportCol.dailyReport.filter(entry => entry.email === managerEmail);
+  const managerData = managerDataArray[0];
+
   try {
     // Fetch data from the database using Mongoose
     const dataFromDatabase = 'rayhan'
@@ -201,23 +235,50 @@ app.get('/createPdf', async (req, res) => {
     doc.moveDown();
     doc.moveDown();
 
-    doc.font('Times-Roman').fontSize(17).fill('##C2272F').text('Job Information', { align: 'center', underline: true });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${data.job_name}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job ID: ${data.job_id}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Employee Name: ${data.employee_name}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${data.date}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Manager', { align: 'center'});
+    doc.moveDown();
+
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${managerData.job_name}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Manager Name: ${managerData.employee_name}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${todayDate}`, { indent: 14 });
 
     doc.moveDown(); // Move down to create space between sections
 
-    doc.font('Times-Roman').fontSize(17).fill('##C2272F').text('Location Information', { align: 'center', underline: true });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Name: ${data.name}`, { indent: 20 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Region: ${data.region}`, { indent: 20 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Country: ${data.country}`, { indent: 20 });
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center' , underline: true});
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${managerData.weaitherCondition.condition.text}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${managerData.weaitherCondition.temp_c}`, { indent: 14 });
+
+    doc.moveDown();    
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center' , underline: true});
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${managerData.clockInAt} UTC+0`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${managerData.ClockOutAt} UTC+0`, { indent: 14 });
 
     doc.moveDown();
 
-    doc.font('Times-Roman').fontSize(16).fill('##C2272F').text('Temperature Information', { align: 'center', underline: true });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${data.temp_c}`, { indent: 20 });
+    doc.font('Times-Roman').fontSize(16).fill('#020617').text('Manpower', { align: 'center' , underline: true});
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total workers: Comming Soon`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total Injured: Comming Soon`, { indent: 14 });
+    doc.moveDown();
+
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center' , underline: true});
+
+    function addClickableImageLink(text, url) {
+      // Calculate the maximum width of the entire line (text + URL)
+      const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
+  
+      // Add text with a link
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
+  
+      // Move down to create space for the next content
+      doc.moveDown();
+  }
+  
+  // Example usage
+  addClickableImageLink('injury_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887685-1200px-Node.js_logo.svg.png');
+  addClickableImageLink('progress_img', 'https://loamic-media.s3.us-east-2.amazonaws.com/1707026887704-hoe89yws-720.jpg');
+  addClickableImageLink('eod_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887708-_.jpg');
+  
 
     doc.moveDown();
 
@@ -231,8 +292,6 @@ app.get('/createPdf', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
-
-
 // -------------------------------------------employeeClockInCard------------------------------------
 
 app.get('/employeeClockInCard', async (req, res) => {
@@ -457,8 +516,13 @@ app.post('/dailyReport', async (req, res) => {
       }
       else {
         const manager = await adminCollection.findOne({ ID: userId });
-        const clockInfo = await managerCheckInCollection.findOne({'projectData.managerInfo.ID': userId, checkOutDate: todayDate });
-        
+        const clockInfo = await managerCheckInCollection.findOne({
+          $and: [
+            { 'projectData.managerInfo.ID': userId },
+            { checkOutDate: todayDate }
+          ]
+        });
+
         const dailyReportForManager = {
           job_name: project.Project_Name,
           job_id: project.Project_id,
@@ -466,8 +530,8 @@ app.post('/dailyReport', async (req, res) => {
           date: new Date,
           weaitherCondition: newWeather,
           clockInAt: clockInfo.projectData.checkInTime,
-          ClockOutAt: clockInfo.checkOutTime,   
-          email: manager.email_address,     
+          ClockOutAt: clockInfo.checkOutTime,
+          email: manager.email_address,
           activity: activity,
           manpower: {
             employee: "employee",
@@ -484,12 +548,12 @@ app.post('/dailyReport', async (req, res) => {
         const isDailyReportExists = await managerDailyReportCollection.findOne({
           $and: [
             { Date: todayDate },
-            {dailyReport: { $elemMatch: { email: manager.email_address } }}
+            { dailyReport: { $elemMatch: { email: manager.email_address } } }
           ]
         });
         console.log(isDailyReportExists);
 
-        if(!isDailyReportExists){
+        if (!isDailyReportExists) {
           const todayCollection = await managerDailyReportCollection.findOne({ Date: todayDate });
 
           if (todayCollection) {
@@ -505,9 +569,9 @@ app.post('/dailyReport', async (req, res) => {
             const create = await managerDailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReportForManager] })
             return res.send(create);
           }
-        }else{
+        } else {
           const employee_name = manager.Employee_First_Name + ' ' + manager.Employee_Last_Name_and_Suffix;
-          return res.send({massege: `${employee_name} alreday submit his daily report today`});
+          return res.send({ massege: `${employee_name} alreday submit his daily report today` });
         }
 
       }
