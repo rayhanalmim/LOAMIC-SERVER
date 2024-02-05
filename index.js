@@ -8,7 +8,7 @@ require('dotenv').config()
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const PDFDocument = require('pdfkit');
-const fs = require('fs'); 
+const fs = require('fs');
 
 app.use(cors())
 app.use(express.json())
@@ -56,76 +56,50 @@ const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongo
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { strict: false }));
 
+// -----------------------task1
 
-// -----------------------------imageUploadApi-------------------------------
-// upload.single('imagePath'),
 
-app.post('/uploadImage', (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      console.error('Error uploading to S3:', err);
-      return res.status(500).json({ error: 'Failed to upload to S3' });
-    }
 
-    const uploadPromises = [];
-
-    // Loop through each field name and upload the corresponding file
-    ['imagePath1', 'imagePath2', 'imagePath3'].forEach((fieldName) => {
-      const file = req.files[fieldName][0];
-
-      const params = {
-        Bucket: 'loamic-media',
-        Key: Date.now().toString() + '-' + file.originalname,
-        Body: file.buffer,
-        ACL: 'public-read',
-        ContentType: file.mimetype,
-      };
-
-      uploadPromises.push(
-        new Promise((resolve, reject) => {
-          s3.upload(params, (err, data) => {
-            if (err) {
-              console.error('Error uploading to S3:', err);
-              reject({ error: `Failed to upload ${fieldName} to S3` });
-            } else {
-              console.log(data);
-              console.log(`Image ${fieldName} uploaded successfully. S3 Object URL:`, data.Location);
-              resolve({ message: `Image ${fieldName} uploaded successfully`, url: data.Location });
-            }
-          });
-        })
-      );
-    });
-
-    try {
-      const results = await Promise.all(uploadPromises);
-      res.json(results);
-    } catch (error) {
-      res.status(500).json(error);
-    }
+app.get('/activeEmployee', async (req, res) => {
+  const managerId = parseInt(req.query.managerId);
+  const dateObj = new Date();
+  const dateString = dateObj.toISOString();
+  const todayDate = dateString.substring(0, 10);
+  
+  const activeEmployee = await clockInCollection.find({
+    $and: [
+      { ClockInDetails: { $elemMatch: { managerId: managerId } } },
+      { ClockInDetails: { $elemMatch: { currentDate: todayDate } } },
+      { ClockInDetails: { $elemMatch: { clockOutTime: "on the way" } } }
+    ]
   });
-});
+  res.send(activeEmployee);
+})
+
 
 // -------------------------------getPdf---
 
-app.get('/test', async (req, res)=>{
+app.get('/test', async (req, res) => {
   const dateObj = new Date();
-    const dateString = dateObj.toISOString();
-    const todayDate = dateString.substring(0, 10);
-    const managerEmail = req.query.testtest;
-    console.log(managerEmail);
+  const dateString = dateObj.toISOString();
+  const todayDate = dateString.substring(0, 10);
+  const employeeId = parseInt(req.query.employeeId);
+  console.log(employeeId);
 
-    const dailyReportCol = await managerDailyReportCollection.findOne({
-      $and: [
-        { Date: todayDate },
-        { dailyReport: { $elemMatch: { email: managerEmail } } }
-      ]
-    });
+  const dailyReportCol = await dailyReportCollection.findOne({
+    $and: [
+      { Date: todayDate },
+      { dailyReport: { $elemMatch: { employeeId: employeeId } } }
+    ]
+  });
+  console.log('daily report:', dailyReportCol);
 
-    if (!dailyReportCol) {
-      return res.send({ message: 'No daily report found for this manager on this date' });
-    }
-    res.send(dailyReportCol);
+  if (!dailyReportCol) {
+    return res.send({ message: 'No daily report found for this manager on this date' });
+  }
+  const employeeDataArray = dailyReportCol.dailyReport.filter(entry => entry.employeeId === employeeId);
+  const employeeData = employeeDataArray[0];
+  res.send(employeeData);
 })
 
 // --------------------------daynamic_Pdf_Create------------------------
@@ -261,14 +235,14 @@ app.get('/test', async (req, res)=>{
 //     function addClickableImageLink(text, url) {
 //       // Calculate the maximum width of the entire line (text + URL)
 //       const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
-  
+
 //       // Add text with a link
 //       doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
-  
+
 //       // Move down to create space for the next content
 //       doc.moveDown();
 //     }
-  
+
 //     // Example usage
 //     addClickableImageLink('injury_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887685-1200px-Node.js_logo.svg.png');
 //     addClickableImageLink('progress_img', 'https://loamic-media.s3.us-east-2.amazonaws.com/1707026887704-hoe89yws-720.jpg');
@@ -286,24 +260,26 @@ app.get('/test', async (req, res)=>{
 
 // http://localhost:5000/downloadManagerDailyReport?managerEmail=Jmassey@loamicbuilders.com
 
-app.get('/downloadManagerDailyReport', async (req, res) => {
+app.get('/downloadEmployeeDailyReport', async (req, res) => {
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
   const todayDate = dateString.substring(0, 10);
-  const managerEmail = req.query.managerEmail;
-  const dailyReportCol = await managerDailyReportCollection.findOne({
+  const employeeId = parseInt(req.query.employeeId);
+  console.log(employeeId);
+
+  const dailyReportCol = await dailyReportCollection.findOne({
     $and: [
       { Date: todayDate },
-      { dailyReport: { $elemMatch: { email: managerEmail } } }
+      { dailyReport: { $elemMatch: { employeeId: employeeId } } }
     ]
   });
+  console.log('daily report:', dailyReportCol);
+
   if (!dailyReportCol) {
-    return res.send({ message: 'no daily report found for this manager in this date' });
+    return res.send({ message: 'No daily report found for this manager on this date' });
   }
-  const managerDataArray = dailyReportCol.dailyReport.filter(entry => entry.email === managerEmail);
-  const managerData = managerDataArray[0];
-  console.log(managerEmail);
-  console.log(managerData)
+  const employeeDataArray = dailyReportCol.dailyReport.filter(entry => entry.employeeId === employeeId);
+  const employeeData = employeeDataArray[0];
 
   try {
     // Fetch data from the database using Mongoose
@@ -317,7 +293,7 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
 
     // Use a writable stream to capture the PDF content
     const pdfBuffer = [];
-    const pdfFilename = `invoice_${managerEmail}_${Date.now()}.pdf`;
+    const pdfFilename = `invoice_${employeeData.currentDate}_${Date.now()}.pdf`;
 
     doc.on('data', chunk => pdfBuffer.push(chunk));
     doc.on('end', async () => {
@@ -331,7 +307,7 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
 
       try {
         await s3.upload(params).promise();
-        
+
 
         // Generate a pre-signed URL for the uploaded PDF
         const signedUrl = await s3.getSignedUrlPromise('getObject', {
@@ -386,50 +362,46 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
     doc.moveDown();
     doc.moveDown();
 
-    doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Manager', { align: 'center'});
+    doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Employee', { align: 'center' });
     doc.moveDown();
 
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${managerData.job_name}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Manager Name: ${managerData.employee_name}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${employeeData.job_name}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Employee Name: ${employeeData.employee_name}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Working Under Manager ID: ${employeeData.workingUnderManagerId}`, { indent: 14 });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${todayDate}`, { indent: 14 });
 
     doc.moveDown(); // Move down to create space between sections
 
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center' , underline: true});
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${managerData.weaitherCondition.condition.text}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${managerData.weaitherCondition.temp_c}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center', underline: true });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${employeeData.weaitherCondition.condition.text}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${employeeData.weaitherCondition.temp_c}`, { indent: 14 });
 
-    doc.moveDown();    
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center' , underline: true});
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${managerData.clockInAt} UTC+0`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${managerData.ClockOutAt} UTC+0`, { indent: 14 });
+    doc.moveDown();
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center', underline: true });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: '04:45' UTC+0`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: '05:00' UTC+0`, { indent: 14 });
 
     doc.moveDown();
 
-    doc.font('Times-Roman').fontSize(16).fill('#020617').text('Manpower', { align: 'center' , underline: true});
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total workers: Comming Soon`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total Injured: Comming Soon`, { indent: 14 });
-    doc.moveDown();
-
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center' , underline: true});
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center', underline: true });
 
     function addClickableImageLink(text, url) {
       // Calculate the maximum width of the entire line (text + URL)
       const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
-  
+
       // Add text with a link
       doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
-  
+
       // Move down to create space for the next content
       doc.moveDown();
-  }
-  
-  // Example usage
-  addClickableImageLink('injury_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887685-1200px-Node.js_logo.svg.png');
-  addClickableImageLink('progress_img', 'https://loamic-media.s3.us-east-2.amazonaws.com/1707026887704-hoe89yws-720.jpg');
-  addClickableImageLink('eod_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887708-_.jpg');
-  
+    }
+
+    // Example usage
+    addClickableImageLink('injury_img', employeeData.injury_img);
+    addClickableImageLink('progress_img', employeeData.progress_img);
+    addClickableImageLink('eod_img', employeeData.eod_img);
+
 
     doc.moveDown();
 
@@ -444,8 +416,7 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
   }
 });
 
-
-app.get('/downloadEmployeeDailyReport', async (req, res) => {
+app.get('/downloadManagerDailyReport', async (req, res) => {
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
   const todayDate = dateString.substring(0, 10);
@@ -476,13 +447,14 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
 
     // Use a writable stream to capture the PDF content
     const pdfBuffer = [];
+    const pdfFilename = `invoice_${managerEmail}_${Date.now()}.pdf`;
 
     doc.on('data', chunk => pdfBuffer.push(chunk));
     doc.on('end', async () => {
       // Upload the PDF buffer to S3
       const params = {
         Bucket: 'loamic-media',
-        Key: 'invoice.pdf',
+        Key: pdfFilename,
         Body: Buffer.concat(pdfBuffer),
         ContentType: 'application/pdf',
       };
@@ -490,13 +462,16 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
       try {
         await s3.upload(params).promise();
 
-        // Set headers for triggering the download
-        res.setHeader('Content-Disposition', 'attachment; filename="invoice.pdf"');
-        res.setHeader('Content-Type', 'application/pdf');
 
-        // Stream the S3 object directly to the response
-        const pdfStream = s3.getObject({ Bucket: 'loamic-media', Key: 'invoice.pdf' }).createReadStream();
-        pdfStream.pipe(res);
+        // Generate a pre-signed URL for the uploaded PDF
+        const signedUrl = await s3.getSignedUrlPromise('getObject', {
+          Bucket: 'loamic-media',
+          Key: pdfFilename,
+          Expires: 60 * 600, // Link expires in 5 minutes
+        });
+
+        // Send the pre-signed URL in JSON format as a response
+        res.json({ downloadUrl: signedUrl });
       } catch (uploadError) {
         console.error(uploadError);
         res.status(500).send('Error uploading PDF to S3');
@@ -541,7 +516,7 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
     doc.moveDown();
     doc.moveDown();
 
-    doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Manager', { align: 'center'});
+    doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Manager', { align: 'center' });
     doc.moveDown();
 
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
@@ -551,53 +526,55 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
 
     doc.moveDown(); // Move down to create space between sections
 
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center' , underline: true});
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center', underline: true });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${managerData.weaitherCondition.condition.text}`, { indent: 14 });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${managerData.weaitherCondition.temp_c}`, { indent: 14 });
 
-    doc.moveDown();    
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center' , underline: true});
+    doc.moveDown();
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center', underline: true });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${managerData.clockInAt} UTC+0`, { indent: 14 });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${managerData.ClockOutAt} UTC+0`, { indent: 14 });
 
     doc.moveDown();
 
-    doc.font('Times-Roman').fontSize(16).fill('#020617').text('Manpower', { align: 'center' , underline: true});
+    doc.font('Times-Roman').fontSize(16).fill('#020617').text('Manpower', { align: 'center', underline: true });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total workers: Comming Soon`, { indent: 14 });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total Injured: Comming Soon`, { indent: 14 });
     doc.moveDown();
 
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center' , underline: true});
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center', underline: true });
 
     function addClickableImageLink(text, url) {
       // Calculate the maximum width of the entire line (text + URL)
       const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
-  
+
       // Add text with a link
       doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
-  
+
       // Move down to create space for the next content
       doc.moveDown();
-  }
-  
-  // Example usage
-  addClickableImageLink('injury_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887685-1200px-Node.js_logo.svg.png');
-  addClickableImageLink('progress_img', 'https://loamic-media.s3.us-east-2.amazonaws.com/1707026887704-hoe89yws-720.jpg');
-  addClickableImageLink('eod_img', 'https://loamic-media.s3.useast-2.amazonaws.com/1707026887708-_.jpg');
-  
+    }
 
-    doc.moveDown();
-
+    // Example usage
+    addClickableImageLink('injury_img', managerData.injury_img);
+    addClickableImageLink('progress_img', managerData.progress_img);
+    addClickableImageLink('eod_img', managerData.eod_img);
 
 
     doc.moveDown();
+
+
+
+    doc.moveDown();
+
     doc.end();
-
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');
   }
 });
+
+
 // -------------------------------------------employeeClockInCard------------------------------------
 
 app.get('/employeeClockInCard', async (req, res) => {
@@ -710,7 +687,7 @@ app.post('/checkIn', async (req, res) => {
     const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
     if (!isExists) {
-      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt, ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
@@ -721,7 +698,7 @@ app.post('/checkIn', async (req, res) => {
         const update = await clockInCollection.updateOne(
           { ID: userIdInt },
           {
-            $push: { ClockInDetails: { currentDate: todayDate, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
+            $push: { ClockInDetails: { currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
           },
         );
         return res.send(update);
@@ -735,8 +712,9 @@ app.post('/checkIn', async (req, res) => {
 app.post('/dailyReport', async (req, res) => {
   const userId = parseInt(req.query.userId);
   const projectId = parseInt(req.query.projectId);
+  const workingUnderManagerId = parseInt(req.query.workingUnderManagerId);
   const role = req.query.role;
-  const { activity, rental, workingUnderManagerId, isInjury } = req.query;
+  const { activity, rental, isInjury } = req.query;
   // const { activity, rental, isInjury, date, workingUnderManagerId, employee, hours, injured } = req.body;
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
@@ -788,14 +766,15 @@ app.post('/dailyReport', async (req, res) => {
       if (role === 'user') {
         const user = await userCollection.findOne({ ID: userId }, { First_Name: 1, Last_Name_and_Suffix: 1, Role: 1, ID: 1, _id: 0 });
         console.log(user);
-       
+
         const dailyReport = {
           job_name: project.Project_Name,
           job_id: project.Project_id,
           // clockInTime: clockInfo
           employee_name: user.First_Name + ' ' + user.Last_Name_and_Suffix,
           workingUnderManagerId: workingUnderManagerId,
-          date: new Date,
+          employeeId: userId,
+          date: todayDate,
           weaitherCondition: newWeather,
           activity: activity,
           rental: rental,
@@ -1011,6 +990,52 @@ app.post('/updateContract', async (req, res) => {
   );
   res.send(result);
 })
+
+app.post('/uploadImage', (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      console.error('Error uploading to S3:', err);
+      return res.status(500).json({ error: 'Failed to upload to S3' });
+    }
+
+    const uploadPromises = [];
+
+    // Loop through each field name and upload the corresponding file
+    ['imagePath1', 'imagePath2', 'imagePath3'].forEach((fieldName) => {
+      const file = req.files[fieldName][0];
+
+      const params = {
+        Bucket: 'loamic-media',
+        Key: Date.now().toString() + '-' + file.originalname,
+        Body: file.buffer,
+        ACL: 'public-read',
+        ContentType: file.mimetype,
+      };
+
+      uploadPromises.push(
+        new Promise((resolve, reject) => {
+          s3.upload(params, (err, data) => {
+            if (err) {
+              console.error('Error uploading to S3:', err);
+              reject({ error: `Failed to upload ${fieldName} to S3` });
+            } else {
+              console.log(data);
+              console.log(`Image ${fieldName} uploaded successfully. S3 Object URL:`, data.Location);
+              resolve({ message: `Image ${fieldName} uploaded successfully`, url: data.Location });
+            }
+          });
+        })
+      );
+    });
+
+    try {
+      const results = await Promise.all(uploadPromises);
+      res.json(results);
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  });
+});
 
 // --------------------------------------localApi-------------------------------------------
 
