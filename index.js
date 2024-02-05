@@ -445,7 +445,7 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
 });
 
 
-app.get('/downloadfffManagerDailyReport', async (req, res) => {
+app.get('/downloadEmployeeDailyReport', async (req, res) => {
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
   const todayDate = dateString.substring(0, 10);
@@ -697,9 +697,9 @@ app.post('/checkIn', async (req, res) => {
     else {
       const result = await dailyRunningProject.create({
         project, checkInDate: todayDate, checkInTime: currentTime, isCheckIn: true, managerInfo: manager, weather_condition: newWeather, manpower: {
-          employee: 'employee',
-          hours: 'hours',
-          injured: 'injured',
+          employee: 10,
+          hours: 180,
+          injured: 3,
         }
       });
       return res.send(result)
