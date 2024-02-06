@@ -62,22 +62,58 @@ const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { 
 // 1. add employee clock in out information in pdf
 // 2. add manpower
 // 3. email functionality 
+// 4. add image in pdf
+
+// app.get('/activeEmployee', async (req, res) => {
+//   const managerId = parseInt(req.query.managerId);
+//   const dateObj = new Date();
+//   const dateString = dateObj.toISOString();
+//   const todayDate = dateString.substring(0, 10);
+  
+//   const activeEmployee = await clockInCollection.find({
+//     $and: [
+//       { ClockInDetails: { $elemMatch: { managerId: managerId } } },
+//       { ClockInDetails: { $elemMatch: { currentDate: todayDate } } },
+//       { ClockInDetails: { $elemMatch: { clockOutTime: "on the way" } } }
+//     ]
+//   });
+//   res.send(activeEmployee);
+// })
 
 app.get('/activeEmployee', async (req, res) => {
   const managerId = parseInt(req.query.managerId);
   const dateObj = new Date();
-  const dateString = dateObj.toISOString();
-  const todayDate = dateString.substring(0, 10);
-  
-  const activeEmployee = await clockInCollection.find({
-    $and: [
-      { ClockInDetails: { $elemMatch: { managerId: managerId } } },
-      { ClockInDetails: { $elemMatch: { currentDate: todayDate } } },
-      { ClockInDetails: { $elemMatch: { clockOutTime: "on the way" } } }
-    ]
-  });
+  const todayDate = dateObj.toISOString().substring(0, 10);
+
+  const activeEmployee = await clockInCollection.aggregate([
+    {
+      $match: {
+        'ClockInDetails.managerId': managerId,
+        'ClockInDetails.currentDate': todayDate,
+        'ClockInDetails.clockOutTime': "on the way"
+      }
+    },
+    {
+      $project: {
+        ClockInDetails: {
+          $filter: {
+            input: '$ClockInDetails',
+            as: 'clockInDetail',
+            cond: {
+              $and: [
+                { $eq: ['$$clockInDetail.currentDate', todayDate] },
+                { $eq: ['$$clockInDetail.clockOutTime', 'on the way'] }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]);
+
   res.send(activeEmployee);
-})
+});
+
 
 // -------------------------------getPdf---
 
