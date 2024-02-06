@@ -9,6 +9,7 @@ const multer = require('multer');
 const AWS = require('aws-sdk');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 app.use(cors())
 app.use(express.json())
@@ -28,6 +29,15 @@ const upload = multer({
   { name: 'imagePath3', maxCount: 1 },
 ]);
 
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com', // Your SMTP server host
+  port: 587, // Your SMTP port
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: 'rayhanalmim1@gmail.com', // Your SMTP email address
+    pass: 'zqazfffzddgcgbuz' // Your SMTP email password
+  }
+});
 
 const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.tdvw5wt.mongodb.net/loamicDB?retryWrites=true&w=majority`;
 
@@ -152,7 +162,6 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
   const dateString = dateObj.toISOString();
   const todayDate = dateString.substring(0, 10);
   const employeeId = parseInt(req.query.employeeId);
-  console.log(employeeId);
 
   const dailyReportCol = await dailyReportCollection.findOne({
     $and: [
@@ -160,18 +169,15 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
       { dailyReport: { $elemMatch: { employeeId: employeeId } } }
     ]
   });
-  console.log('daily report:', dailyReportCol);
 
   if (!dailyReportCol) {
     return res.send({ message: 'No daily report found for this manager on this date' });
   }
+
   const employeeDataArray = dailyReportCol.dailyReport.filter(entry => entry.employeeId === employeeId);
   const employeeData = employeeDataArray[0];
 
   try {
-    // Fetch data from the database using Mongoose
-    const dataFromDatabase = 'rayhan'
-
     // Fetch image URL from the database
     const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706962846030-IMG-20240203-WA0000__1_-removebg.png";
 
@@ -184,17 +190,20 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
 
     doc.on('data', chunk => pdfBuffer.push(chunk));
     doc.on('end', async () => {
-      // Upload the PDF buffer to S3
-      const params = {
-        Bucket: 'loamic-media',
-        Key: pdfFilename,
-        Body: Buffer.concat(pdfBuffer),
-        ContentType: 'application/pdf',
-      };
-
+      // Create a transporter for sending emails
       try {
-        await s3.upload(params).promise();
+        // Fetch data from the database using Mongoose
+        const dataFromDatabase = 'rayhan';
 
+        // Upload the PDF buffer to S3
+        const params = {
+          Bucket: 'loamic-media',
+          Key: pdfFilename,
+          Body: Buffer.concat(pdfBuffer),
+          ContentType: 'application/pdf',
+        };
+
+        await s3.upload(params).promise();
 
         // Generate a pre-signed URL for the uploaded PDF
         const signedUrl = await s3.getSignedUrlPromise('getObject', {
@@ -203,14 +212,31 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
           Expires: 60 * 600, // Link expires in 5 minutes
         });
 
-        // Send the pre-signed URL in JSON format as a response
-        res.json({ downloadUrl: signedUrl });
-      } catch (uploadError) {
-        console.error(uploadError);
-        res.status(500).send('Error uploading PDF to S3');
+        // Send email with the generated PDF link
+        const emailOptions = {
+          from: 'rayhanalmim1@gmail.com',
+          to: 'epiczone54@gmail.com', // recipient email address
+          subject: 'Daily Report PDF',
+          text: 'Here is your daily report PDF: ' + signedUrl
+        };
+
+        transporter.sendMail(emailOptions, (err, info) => {
+          if (err) {
+            console.error('Error sending email:', err);
+            res.status(500).send('Error sending email');
+          } else {
+            console.log('Email sent successfully:', info);
+            // Send the pre-signed URL in JSON format as a response
+            res.json({ downloadUrl: signedUrl, message: 'Email sent successfully' });
+          }
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
       }
     });
 
+    // PDF content creation...
     const distanceMargin = 18;
     doc
       .fillAndStroke('#0e8cc3')
@@ -297,11 +323,169 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
     doc.moveDown();
 
     doc.end();
+    
+
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal Server Error');
   }
 });
+
+// app.get('/downloadEmployeeDailyReport', async (req, res) => {
+//   const dateObj = new Date();
+//   const dateString = dateObj.toISOString();
+//   const todayDate = dateString.substring(0, 10);
+//   const employeeId = parseInt(req.query.employeeId);
+//   console.log(employeeId);
+
+//   const dailyReportCol = await dailyReportCollection.findOne({
+//     $and: [
+//       { Date: todayDate },
+//       { dailyReport: { $elemMatch: { employeeId: employeeId } } }
+//     ]
+//   });
+//   console.log('daily report:', dailyReportCol);
+
+//   if (!dailyReportCol) {
+//     return res.send({ message: 'No daily report found for this manager on this date' });
+//   }
+//   const employeeDataArray = dailyReportCol.dailyReport.filter(entry => entry.employeeId === employeeId);
+//   const employeeData = employeeDataArray[0];
+
+//   try {
+//     // Fetch data from the database using Mongoose
+//     const dataFromDatabase = 'rayhan'
+
+//     // Fetch image URL from the database
+//     const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706962846030-IMG-20240203-WA0000__1_-removebg.png";
+
+//     // Create a PDF
+//     const doc = new PDFDocument();
+
+//     // Use a writable stream to capture the PDF content
+//     const pdfBuffer = [];
+//     const pdfFilename = `invoice_${employeeData.currentDate}_${Date.now()}.pdf`;
+
+//     doc.on('data', chunk => pdfBuffer.push(chunk));
+//     doc.on('end', async () => {
+//       // Upload the PDF buffer to S3
+//       const params = {
+//         Bucket: 'loamic-media',
+//         Key: pdfFilename,
+//         Body: Buffer.concat(pdfBuffer),
+//         ContentType: 'application/pdf',
+//       };
+
+//       try {
+//         await s3.upload(params).promise();
+
+
+//         // Generate a pre-signed URL for the uploaded PDF
+//         const signedUrl = await s3.getSignedUrlPromise('getObject', {
+//           Bucket: 'loamic-media',
+//           Key: pdfFilename,
+//           Expires: 60 * 600, // Link expires in 5 minutes
+//         });
+
+//         // Send the pre-signed URL in JSON format as a response
+//         res.json({ downloadUrl: signedUrl });
+//       } catch (uploadError) {
+//         console.error(uploadError);
+//         res.status(500).send('Error uploading PDF to S3');
+//       }
+//     });
+
+//     const distanceMargin = 18;
+//     doc
+//       .fillAndStroke('#0e8cc3')
+//       .lineWidth(20)
+//       .lineJoin('round')
+//       .rect(
+//         distanceMargin,
+//         distanceMargin,
+//         doc.page.width - distanceMargin * 2,
+//         doc.page.height - distanceMargin * 2,
+//       )
+//       .stroke();
+
+//     try {
+//       const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+//       const imageBuffer = Buffer.from(imageResponse.data);
+//       doc.image(
+//         imageBuffer,
+//         doc.page.width / 2 - 190 / 2,
+//         60,
+//         {
+//           fit: [190, 100],
+//           align: 'center',
+//         }
+//       );
+//     } catch (imageError) {
+//       console.error('Error downloading image:', imageError);
+//       // Handle error, you may want to use a default image in case of failure
+//     }
+
+//     doc.moveDown();
+//     doc.moveDown();
+//     doc.moveDown();
+//     doc.moveDown();
+//     doc.moveDown();
+//     doc.moveDown();
+//     doc.moveDown();
+
+//     doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Employee', { align: 'center' });
+//     doc.moveDown();
+
+//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${employeeData.job_name}`, { indent: 14 });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Employee Name: ${employeeData.employee_name}`, { indent: 14 });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Working Under Manager ID: ${employeeData.workingUnderManagerId}`, { indent: 14 });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${todayDate}`, { indent: 14 });
+
+//     doc.moveDown(); // Move down to create space between sections
+
+//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center', underline: true });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${employeeData.weaitherCondition.condition.text}`, { indent: 14 });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${employeeData.weaitherCondition.temp_c}`, { indent: 14 });
+
+//     doc.moveDown();
+//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center', underline: true });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: '04:45' UTC+0`, { indent: 14 });
+//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: '05:00' UTC+0`, { indent: 14 });
+
+//     doc.moveDown();
+
+//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center', underline: true });
+
+//     function addClickableImageLink(text, url) {
+//       // Calculate the maximum width of the entire line (text + URL)
+//       const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
+
+//       // Add text with a link
+//       doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
+
+//       // Move down to create space for the next content
+//       doc.moveDown();
+//     }
+
+//     // Example usage
+//     addClickableImageLink('injury_img', employeeData.injury_img);
+//     addClickableImageLink('progress_img', employeeData.progress_img);
+//     addClickableImageLink('eod_img', employeeData.eod_img);
+
+
+//     doc.moveDown();
+
+
+
+//     doc.moveDown();
+
+//     doc.end();
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send('Internal Server Error');
+//   }
+// });
 
 app.get('/downloadManagerDailyReport', async (req, res) => {
   const dateObj = new Date();
