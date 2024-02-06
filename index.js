@@ -127,9 +127,6 @@ app.get('/activeEmployee', async (req, res) => {
   res.send(activeEmployee);
 });
 
-
-
-
 // -------------------------------getPdf---
 
 app.get('/test', async (req, res) => {
@@ -217,7 +214,57 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
           from: 'rayhanalmim1@gmail.com',
           to: 'epiczone54@gmail.com', // recipient email address
           subject: 'Daily Report PDF',
-          text: 'Here is your daily report PDF: ' + signedUrl
+          html: `<!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Manager Daily Report</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+              }
+              .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                border: 1px solid #ccc;
+              }
+              .logo img {
+                max-width: 100px;
+                height: auto;
+              }
+              .report-info {
+                margin-top: 20px;
+              }
+              .info p {
+                margin: 5px 0;
+              }
+              .info p strong {
+                font-weight: bold;
+              }
+              .info p a {
+                color: blue;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="logo">
+                <img src="https://loamic-media.s3.us-east-2.amazonaws.com/1706962846030-IMG-20240203-WA0000__1_-removebg.png" alt="Loamic Builders Logo">
+              </div>
+              <div class="report-info">
+                <h2>Manager Daily Report</h2>
+                <div class="info">
+                  <p><strong>Manager Name:</strong> ${employeeData.employee_name}</p>
+                  <p><strong>Date:</strong> ${todayDate}</p>
+                  <p><strong>Daily Report PDF:</strong> <a href="${signedUrl}">Download PDF</a></p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+          `,
         };
 
         transporter.sendMail(emailOptions, (err, info) => {
