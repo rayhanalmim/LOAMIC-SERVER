@@ -209,7 +209,7 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
         const signedUrl = await s3.getSignedUrlPromise('getObject', {
           Bucket: 'loamic-media',
           Key: pdfFilename,
-          Expires: 60 * 600, // Link expires in 5 minutes
+          Expires: 60 * 6000, // Link expires in 5 minutes
         });
 
         // Send email with the generated PDF link
