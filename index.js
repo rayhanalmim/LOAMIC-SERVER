@@ -88,24 +88,27 @@ app.get('/activeEmployee', async (req, res) => {
   const activeEmployee = await clockInCollection.aggregate([
     {
       $match: {
-        'ClockInDetails.managerId': managerId,
-        'ClockInDetails.currentDate': todayDate,
-        'ClockInDetails.clockOutTime': "on the way"
+        'ClockInDetails.managerId': managerId
       }
     },
     {
       $project: {
         ClockInDetails: {
-          $filter: {
-            input: '$ClockInDetails',
-            as: 'clockInDetail',
-            cond: {
-              $and: [
-                { $eq: ['$$clockInDetail.currentDate', todayDate] },
-                { $eq: ['$$clockInDetail.clockOutTime', 'on the way'] }
-              ]
-            }
-          }
+          $arrayElemAt: [
+            {
+              $filter: {
+                input: '$ClockInDetails',
+                as: 'detail',
+                cond: {
+                  $and: [
+                    { $eq: ['$$detail.currentDate', todayDate] },
+                    { $eq: ['$$detail.clockOutTime', "on the way"] }
+                  ]
+                }
+              }
+            },
+            0
+          ]
         }
       }
     }
@@ -113,6 +116,8 @@ app.get('/activeEmployee', async (req, res) => {
 
   res.send(activeEmployee);
 });
+
+
 
 
 // -------------------------------getPdf---
