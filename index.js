@@ -99,7 +99,9 @@ app.get('/activeEmployee', async (req, res) => {
   const activeEmployee = await clockInCollection.aggregate([
     {
       $match: {
-        'ClockInDetails.managerId': managerId
+        'ClockInDetails.managerId': managerId,
+        'ClockInDetails.currentDate': todayDate,
+        'ClockInDetails.clockOutTime': "on the way"
       }
     },
     {
@@ -123,7 +125,7 @@ app.get('/activeEmployee', async (req, res) => {
         }
       }
     }
-  ], { ClockInDetails: 1, _id: 0 });
+  ]);
 
   res.send(activeEmployee);
 });
@@ -364,13 +366,13 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
       for (const [fieldName, urls] of Object.entries(groupedImages)) {
         // Add file name as title
         if(fieldName === 'imagePath1'){
-          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Injury Image: ", { indent: 14 });
+          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Progress Image ", { indent: 14 });
         }
         else if(fieldName === 'imagePath2'){
-          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Progress Image: ", { indent: 14 });
+          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("EOD Image: ", { indent: 14 });
         }
         else if(fieldName === 'imagePath3'){
-          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("EOD Image: ", { indent: 14 });
+          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Receipt: ", { indent: 14 });
         }
         
 
