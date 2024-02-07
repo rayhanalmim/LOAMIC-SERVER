@@ -222,7 +222,7 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Manager Daily Report</title>
+            <title>Employee Daily Report</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -259,7 +259,7 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
               <div class="report-info">
                 <h2>Manager Daily Report</h2>
                 <div class="info">
-                  <p><strong>Manager Name:</strong> ${employeeData.employee_name}</p>
+                  <p><strong>Employee Name:</strong> ${employeeData.employee_name}</p>
                   <p><strong>Date:</strong> ${todayDate}</p>
                   <p><strong>Daily Report PDF:</strong> <a href="${signedUrl}">Download PDF</a></p>
                 </div>
