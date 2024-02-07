@@ -622,24 +622,68 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
 
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center', underline: true });
 
-    function addClickableImageLink(text, url) {
-      // Calculate the maximum width of the entire line (text + URL)
-      const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
+    async function addImagesWithTitles(imageData) {
+      // Group image URLs by file name
+      const groupedImages = imageData.reduce((acc, { fieldName, url }) => {
+        if (!acc[fieldName]) {
+          acc[fieldName] = [];
+        }
+        acc[fieldName].push(url);
+        return acc;
+      }, {});
 
-      // Add text with a link
-      doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
-
-      // Move down to create space for the next content
-      doc.moveDown();
+      // Iterate over each file name and its associated image URLs
+      for (const [fieldName, urls] of Object.entries(groupedImages)) {
+        // Add file name as title
+        if(fieldName === 'imagePath1'){
+          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Progress Image ", { indent: 14 });
+        }
+        else if(fieldName === 'imagePath2'){
+          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("EOD Image: ", { indent: 14 });
+        }
+        else if(fieldName === 'imagePath3'){
+          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Receipt: ", { indent: 14 });
+        }
+        // Add images
+        for (const imageUrl of urls) {
+          try {
+            const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+            const imageBuffer = Buffer.from(imageResponse.data);
+            if (doc.y > doc.page.height - 250) {
+              doc.addPage(); // Add a new page if the remaining space is insufficient
+            }
+            doc.image(
+              imageBuffer,
+              doc.page.width / 2 - 190 / 2,
+              doc.y + 50, // Adjust Y position according to your needs
+              {
+                fit: [190, 100],
+                align: 'center',
+              }
+            );
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+          } catch (error) {
+            console.error('Error downloading image:', error);
+            // Handle error, you may want to use a default image in case of failure
+          }
+        }
+      }
     }
 
     // Example usage
-    addClickableImageLink('injury_img', managerData.injury_img);
-    addClickableImageLink('progress_img', managerData.progress_img);
-    addClickableImageLink('eod_img', managerData.eod_img);
+    const allImageUrls = managerData.allImage;
 
-
-    doc.moveDown();
+    await addImagesWithTitles(allImageUrls);
 
 
 
