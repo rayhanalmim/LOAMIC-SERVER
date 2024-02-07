@@ -215,7 +215,7 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
         // Send email with the generated PDF link
         const emailOptions = {
           from: 'rayhanalmim1@gmail.com',
-          to: 'mehedihasanrooman@gmail.com', // recipient email address
+          to: 'Laith@loamicbuilders.com', // recipient email address
           subject: 'Daily Report PDF',
           html: `<!DOCTYPE html>
           <html lang="en">
@@ -483,8 +483,8 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
 
         // Send email with the generated PDF link
         const emailOptions = {
-          from: 'rayhanalmim1@gmail.com',
-          to: 'mehedihasanrooman@gmail.com',
+          from: 'accounting@loamicbuilders.com',
+          to: 'Laith@loamicbuilders.com',
           subject: 'Daily Report PDF',
           html: `<!DOCTYPE html>
           <html lang="en">
@@ -696,8 +696,6 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
-
-// app.get('/downloadManagerDailyReport', async (req, res) => {
 //   const dateObj = new Date();
 //   const dateString = dateObj.toISOString();
 //   const todayDate = dateString.substring(0, 10);
