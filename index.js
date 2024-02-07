@@ -80,7 +80,7 @@ const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { 
 //   const dateObj = new Date();
 //   const dateString = dateObj.toISOString();
 //   const todayDate = dateString.substring(0, 10);
-  
+
 //   const activeEmployee = await clockInCollection.find({
 //     $and: [
 //       { ClockInDetails: { $elemMatch: { managerId: managerId } } },
@@ -123,7 +123,7 @@ app.get('/activeEmployee', async (req, res) => {
         }
       }
     }
-  ]);
+  ], { ClockInDetails: 1, _id: 0 });
 
   res.send(activeEmployee);
 });
@@ -351,9 +351,9 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
 
     // Function to add images directly to the PDF
     async function addImages(imageUrls) {
-      for (const imageUrl of imageUrls) {
+      for (const imageUrlObj of imageUrls) {
         try {
-          const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+          const imageResponse = await axios.get(imageUrlObj.url, { responseType: 'arraybuffer' });
           const imageBuffer = Buffer.from(imageResponse.data);
           if (doc.y > doc.page.height - 250) {
             doc.addPage(); // Add a new page if the remaining space is insufficient
@@ -367,34 +367,34 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
               align: 'center',
             }
           );
-          doc.moveDown(); // Move down after printing each image
-          doc.moveDown(); // Move down after printing each image
-          doc.moveDown(); // Move down after printing each image
-          doc.moveDown(); // Move down after printing each image
-          doc.moveDown(); // Move down after printing each image
-          doc.moveDown(); // Move down after printing each image
-          doc.moveDown(); // Move down after printing each image
-          doc.moveDown(); // Move down after printing each image
-          doc.moveDown(); // Move down after printing each image
-          doc.moveDown(); // Move down after printing each image
+          doc.moveDown(); 
+          doc.moveDown(); 
+          doc.moveDown(); 
+          doc.moveDown(); 
+          doc.moveDown(); 
+          doc.moveDown(); 
+          doc.moveDown(); 
+          doc.moveDown(); 
         } catch (error) {
           console.error('Error downloading image:', error);
           // Handle error, you may want to use a default image in case of failure
         }
       }
     }
-    
+
     // Example usage
-    const imageUrls = [employeeData.injury_img, employeeData.progress_img, employeeData.eod_img];
-    await addImages(imageUrls);
-    
+    const allImageUrls = employeeData.allImage;
+
+    await addImages(allImageUrls);
+
     doc.moveDown(); // Move down after adding all images
-    
+
+
 
     doc.moveDown();
 
     doc.end();
-    
+
 
   } catch (error) {
     console.error(error);
@@ -896,7 +896,7 @@ app.post('/checkIn', async (req, res) => {
     const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
     if (!isExists) {
-      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId : employee.ID , managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId: employee.ID, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt, ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
@@ -907,7 +907,7 @@ app.post('/checkIn', async (req, res) => {
         const update = await clockInCollection.updateOne(
           { ID: userIdInt },
           {
-            $push: { ClockInDetails: { currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId : employee.ID , managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
+            $push: { ClockInDetails: { currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId: employee.ID, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
           },
         );
         return res.send(update);
@@ -939,12 +939,12 @@ app.post('/dailyReport', async (req, res) => {
       console.error('Error uploading to S3:', err);
       return res.status(500).json({ error: 'Failed to upload to S3' });
     }
-  
+
     const uploadPromises = [];
-  
+
     ['imagePath1', 'imagePath2', 'imagePath3'].forEach((fieldName) => {
       const files = req.files[fieldName];
-  
+
       files.forEach((file) => {
         const params = {
           Bucket: 'loamic-media',
@@ -953,7 +953,7 @@ app.post('/dailyReport', async (req, res) => {
           ACL: 'public-read',
           ContentType: file.mimetype,
         };
-  
+
         uploadPromises.push(
           new Promise((resolve, reject) => {
             s3.upload(params, (err, data) => {
