@@ -215,7 +215,7 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
         // Send email with the generated PDF link
         const emailOptions = {
           from: 'rayhanalmim1@gmail.com',
-          to: 'epiczone54@gmail.com', // recipient email address
+          to: 'mehedihasanrooman@gmail.com', // recipient email address
           subject: 'Daily Report PDF',
           html: `<!DOCTYPE html>
           <html lang="en">
@@ -484,7 +484,7 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
         // Send email with the generated PDF link
         const emailOptions = {
           from: 'rayhanalmim1@gmail.com',
-          to: 'epiczone54@gmail.com',
+          to: 'mehedihasanrooman@gmail.com',
           subject: 'Daily Report PDF',
           html: `<!DOCTYPE html>
           <html lang="en">
