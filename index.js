@@ -10,6 +10,8 @@ const AWS = require('aws-sdk');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
+const puppeteer = require('puppeteer');
+const pdf = require('html-pdf');
 
 app.use(cors())
 app.use(express.json())
@@ -66,7 +68,6 @@ const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongo
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { strict: false }));
 
-// -----------------------task1
 
 // --------------------------------Todo------------------
 // 1. add employee clock in out information in pdf
@@ -153,6 +154,8 @@ app.get('/test', async (req, res) => {
 })
 
 // --------------------------daynamic_Pdf_Create------------------------
+
+
 
 app.get('/downloadEmployeeDailyReport', async (req, res) => {
   const dateObj = new Date();
@@ -346,26 +349,47 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
 
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center', underline: true });
 
-    function addClickableImageLink(text, url) {
-      // Calculate the maximum width of the entire line (text + URL)
-      const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
-
-      // Add text with a link
-      doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
-
-      // Move down to create space for the next content
-      doc.moveDown();
+    // Function to add images directly to the PDF
+    async function addImages(imageUrls) {
+      for (const imageUrl of imageUrls) {
+        try {
+          const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+          const imageBuffer = Buffer.from(imageResponse.data);
+          if (doc.y > doc.page.height - 250) {
+            doc.addPage(); // Add a new page if the remaining space is insufficient
+          }
+          doc.image(
+            imageBuffer,
+            doc.page.width / 2 - 190 / 2,
+            doc.y + 50, // Adjust Y position according to your needs
+            {
+              fit: [190, 100],
+              align: 'center',
+            }
+          );
+          doc.moveDown(); // Move down after printing each image
+          doc.moveDown(); // Move down after printing each image
+          doc.moveDown(); // Move down after printing each image
+          doc.moveDown(); // Move down after printing each image
+          doc.moveDown(); // Move down after printing each image
+          doc.moveDown(); // Move down after printing each image
+          doc.moveDown(); // Move down after printing each image
+          doc.moveDown(); // Move down after printing each image
+          doc.moveDown(); // Move down after printing each image
+          doc.moveDown(); // Move down after printing each image
+        } catch (error) {
+          console.error('Error downloading image:', error);
+          // Handle error, you may want to use a default image in case of failure
+        }
+      }
     }
-
+    
     // Example usage
-    addClickableImageLink('injury_img', employeeData.injury_img);
-    addClickableImageLink('progress_img', employeeData.progress_img);
-    addClickableImageLink('eod_img', employeeData.eod_img);
-
-
-    doc.moveDown();
-
-
+    const imageUrls = [employeeData.injury_img, employeeData.progress_img, employeeData.eod_img];
+    await addImages(imageUrls);
+    
+    doc.moveDown(); // Move down after adding all images
+    
 
     doc.moveDown();
 
