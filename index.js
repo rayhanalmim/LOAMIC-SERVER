@@ -72,8 +72,6 @@ const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { 
 // --------------------------------Todo------------------
 // 1. add employee clock in out information in pdf
 // 2. add manpower
-// 3. email functionality 
-// 4. add image in pdf
 
 // app.get('/activeEmployee', async (req, res) => {
 //   const managerId = parseInt(req.query.managerId);
