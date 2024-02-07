@@ -349,35 +349,63 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
 
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center', underline: true });
 
-    // Function to add images directly to the PDF
-    async function addImages(imageUrls) {
-      for (const imageUrlObj of imageUrls) {
-        try {
-          const imageResponse = await axios.get(imageUrlObj.url, { responseType: 'arraybuffer' });
-          const imageBuffer = Buffer.from(imageResponse.data);
-          if (doc.y > doc.page.height - 250) {
-            doc.addPage(); // Add a new page if the remaining space is insufficient
-          }
-          doc.image(
-            imageBuffer,
-            doc.page.width / 2 - 190 / 2,
-            doc.y + 50, // Adjust Y position according to your needs
-            {
-              fit: [190, 100],
-              align: 'center',
+    // Function to add images with titles directly to the PDF
+    async function addImagesWithTitles(imageData) {
+      // Group image URLs by file name
+      const groupedImages = imageData.reduce((acc, { fieldName, url }) => {
+        if (!acc[fieldName]) {
+          acc[fieldName] = [];
+        }
+        acc[fieldName].push(url);
+        return acc;
+      }, {});
+
+      // Iterate over each file name and its associated image URLs
+      for (const [fieldName, urls] of Object.entries(groupedImages)) {
+        // Add file name as title
+        if(fieldName === 'imagePath1'){
+          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Injury Image: ", { indent: 14 });
+        }
+        else if(fieldName === 'imagePath2'){
+          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Progress Image: ", { indent: 14 });
+        }
+        else if(fieldName === 'imagePath3'){
+          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("EOD Image: ", { indent: 14 });
+        }
+        
+
+        // Add images
+        for (const imageUrl of urls) {
+          try {
+            const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+            const imageBuffer = Buffer.from(imageResponse.data);
+            if (doc.y > doc.page.height - 250) {
+              doc.addPage(); // Add a new page if the remaining space is insufficient
             }
-          );
-          doc.moveDown(); 
-          doc.moveDown(); 
-          doc.moveDown(); 
-          doc.moveDown(); 
-          doc.moveDown(); 
-          doc.moveDown(); 
-          doc.moveDown(); 
-          doc.moveDown(); 
-        } catch (error) {
-          console.error('Error downloading image:', error);
-          // Handle error, you may want to use a default image in case of failure
+            doc.image(
+              imageBuffer,
+              doc.page.width / 2 - 190 / 2,
+              doc.y + 50, // Adjust Y position according to your needs
+              {
+                fit: [190, 100],
+                align: 'center',
+              }
+            );
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+            doc.moveDown(); // Move down after printing each image
+          } catch (error) {
+            console.error('Error downloading image:', error);
+            // Handle error, you may want to use a default image in case of failure
+          }
         }
       }
     }
@@ -385,7 +413,7 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
     // Example usage
     const allImageUrls = employeeData.allImage;
 
-    await addImages(allImageUrls);
+    await addImagesWithTitles(allImageUrls);
 
     doc.moveDown(); // Move down after adding all images
 
