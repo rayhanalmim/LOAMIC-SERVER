@@ -24,9 +24,9 @@ const s3 = new AWS.S3();
 const upload = multer({
   storage: multer.memoryStorage(),
 }).fields([
-  { name: 'imagePath1', maxCount: 1 },
-  { name: 'imagePath2', maxCount: 1 },
-  { name: 'imagePath3', maxCount: 1 },
+  { name: 'imagePath1', maxCount: 5 },
+  { name: 'imagePath2', maxCount: 5 },
+  { name: 'imagePath3', maxCount: 5 },
 ]);
 
 const transporter = nodemailer.createTransport({
@@ -219,7 +219,7 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Employee Daily Report</title>
+            <title>Manager Daily Report</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -872,7 +872,7 @@ app.post('/checkIn', async (req, res) => {
     const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
     if (!isExists) {
-      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId : employee.ID , managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt, ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
@@ -883,7 +883,7 @@ app.post('/checkIn', async (req, res) => {
         const update = await clockInCollection.updateOne(
           { ID: userIdInt },
           {
-            $push: { ClockInDetails: { currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
+            $push: { ClockInDetails: { currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId : employee.ID , managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
           },
         );
         return res.send(update);
@@ -915,32 +915,33 @@ app.post('/dailyReport', async (req, res) => {
       console.error('Error uploading to S3:', err);
       return res.status(500).json({ error: 'Failed to upload to S3' });
     }
-
+  
     const uploadPromises = [];
-
-    // Loop through each field name and upload the corresponding file
+  
     ['imagePath1', 'imagePath2', 'imagePath3'].forEach((fieldName) => {
-      const file = req.files[fieldName][0];
-
-      const params = {
-        Bucket: 'loamic-media',
-        Key: Date.now().toString() + '-' + file.originalname,
-        Body: file.buffer,
-        ACL: 'public-read',
-        ContentType: file.mimetype,
-      };
-
-      uploadPromises.push(
-        new Promise((resolve, reject) => {
-          s3.upload(params, (err, data) => {
-            if (err) {
-              reject({ error: `Failed to upload ${fieldName} to S3` });
-            } else {
-              resolve({ message: `Image ${fieldName} uploaded successfully`, url: data.Location });
-            }
-          });
-        })
-      );
+      const files = req.files[fieldName];
+  
+      files.forEach((file) => {
+        const params = {
+          Bucket: 'loamic-media',
+          Key: Date.now().toString() + '-' + file.originalname,
+          Body: file.buffer,
+          ACL: 'public-read',
+          ContentType: file.mimetype,
+        };
+  
+        uploadPromises.push(
+          new Promise((resolve, reject) => {
+            s3.upload(params, (err, data) => {
+              if (err) {
+                reject({ error: `Failed to upload ${fieldName} to S3` });
+              } else {
+                resolve({ fieldName: fieldName, url: data.Location }); // Include fieldName in the result
+              }
+            });
+          })
+        );
+      });
     });
 
     try {
@@ -967,6 +968,7 @@ app.post('/dailyReport', async (req, res) => {
           injury_img: results[0].url,
           progress_img: results[1].url,
           eod_img: results[2].url,
+          allImage: results,
         };
 
         const todayCollection = await dailyReportCollection.findOne({ Date: todayDate });
@@ -1014,6 +1016,7 @@ app.post('/dailyReport', async (req, res) => {
           injury_img: results[0].url,
           progress_img: results[1].url,
           eod_img: results[2].url,
+          allImage: results,
         };
 
         const isDailyReportExists = await managerDailyReportCollection.findOne({
