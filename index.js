@@ -26,9 +26,9 @@ const s3 = new AWS.S3();
 const upload = multer({
   storage: multer.memoryStorage(),
 }).fields([
-  { name: 'imagePath1', maxCount: 5 },
-  { name: 'imagePath2', maxCount: 5 },
-  { name: 'imagePath3', maxCount: 5 },
+  { name: 'imagePath1', maxCount: 20 },
+  { name: 'imagePath2', maxCount: 20 },
+  { name: 'imagePath3', maxCount: 20 },
 ]);
 
 const transporter = nodemailer.createTransport({
@@ -68,26 +68,6 @@ const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongo
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { strict: false }));
 
-
-// --------------------------------Todo------------------
-// 1. add employee clock in out information in pdf
-// 2. add manpower
-
-// app.get('/activeEmployee', async (req, res) => {
-//   const managerId = parseInt(req.query.managerId);
-//   const dateObj = new Date();
-//   const dateString = dateObj.toISOString();
-//   const todayDate = dateString.substring(0, 10);
-
-//   const activeEmployee = await clockInCollection.find({
-//     $and: [
-//       { ClockInDetails: { $elemMatch: { managerId: managerId } } },
-//       { ClockInDetails: { $elemMatch: { currentDate: todayDate } } },
-//       { ClockInDetails: { $elemMatch: { clockOutTime: "on the way" } } }
-//     ]
-//   });
-//   res.send(activeEmployee);
-// })
 
 app.get('/activeEmployee', async (req, res) => {
   const managerId = parseInt(req.query.managerId);
@@ -131,31 +111,10 @@ app.get('/activeEmployee', async (req, res) => {
 // -------------------------------getPdf---
 
 app.get('/test', async (req, res) => {
-  const dateObj = new Date();
-  const dateString = dateObj.toISOString();
-  const todayDate = dateString.substring(0, 10);
-  const employeeId = parseInt(req.query.employeeId);
-  console.log(employeeId);
-
-  const dailyReportCol = await dailyReportCollection.findOne({
-    $and: [
-      { Date: todayDate },
-      { dailyReport: { $elemMatch: { employeeId: employeeId } } }
-    ]
-  });
-  console.log('daily report:', dailyReportCol);
-
-  if (!dailyReportCol) {
-    return res.send({ message: 'No daily report found for this manager on this date' });
-  }
-  const employeeDataArray = dailyReportCol.dailyReport.filter(entry => entry.employeeId === employeeId);
-  const employeeData = employeeDataArray[0];
-  res.send(employeeData);
+  
 })
 
 // --------------------------daynamic_Pdf_Create------------------------
-
-
 
 app.get('/downloadEmployeeDailyReport', async (req, res) => {
   const dateObj = new Date();
@@ -215,7 +174,7 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
         // Send email with the generated PDF link
         const emailOptions = {
           from: 'rayhanalmim1@gmail.com',
-          to: 'Laith@loamicbuilders.com', // recipient email address
+          to: 'mehedihasanrooman@gmail.com', // recipient email address
           subject: 'Daily Report PDF',
           html: `<!DOCTYPE html>
           <html lang="en">
@@ -330,15 +289,14 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
 
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${employeeData.job_name}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Employee Name: ${employeeData.employee_name}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Working Under Manager ID: ${employeeData.workingUnderManagerId}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Superintendent Name: ${employeeData.workingUnderManagerId}`, { indent: 14 });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${todayDate}`, { indent: 14 });
 
     doc.moveDown(); // Move down to create space between sections
 
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center', underline: true });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${employeeData.weaitherCondition.condition.text}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${employeeData.weaitherCondition.temp_c}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (F): ${employeeData.weaitherCondition.temp_f}`, { indent: 14 });
 
     doc.moveDown();
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center', underline: true });
@@ -363,16 +321,16 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
       // Iterate over each file name and its associated image URLs
       for (const [fieldName, urls] of Object.entries(groupedImages)) {
         // Add file name as title
-        if(fieldName === 'imagePath1'){
+        if (fieldName === 'imagePath1') {
           doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Progress Image ", { indent: 14 });
         }
-        else if(fieldName === 'imagePath2'){
+        else if (fieldName === 'imagePath2') {
           doc.font('Times-Roman').fontSize(14).fill('#021c27').text("EOD Image: ", { indent: 14 });
         }
-        else if(fieldName === 'imagePath3'){
+        else if (fieldName === 'imagePath3') {
           doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Receipt: ", { indent: 14 });
         }
-        
+
 
         // Add images
         for (const imageUrl of urls) {
@@ -635,13 +593,13 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
       // Iterate over each file name and its associated image URLs
       for (const [fieldName, urls] of Object.entries(groupedImages)) {
         // Add file name as title
-        if(fieldName === 'imagePath1'){
+        if (fieldName === 'imagePath1') {
           doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Progress Image ", { indent: 14 });
         }
-        else if(fieldName === 'imagePath2'){
+        else if (fieldName === 'imagePath2') {
           doc.font('Times-Roman').fontSize(14).fill('#021c27').text("EOD Image: ", { indent: 14 });
         }
-        else if(fieldName === 'imagePath3'){
+        else if (fieldName === 'imagePath3') {
           doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Receipt: ", { indent: 14 });
         }
         // Add images
@@ -696,162 +654,6 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
-//   const dateObj = new Date();
-//   const dateString = dateObj.toISOString();
-//   const todayDate = dateString.substring(0, 10);
-//   const managerEmail = req.query.managerEmail;
-//   const dailyReportCol = await managerDailyReportCollection.findOne({
-//     $and: [
-//       { Date: todayDate },
-//       { dailyReport: { $elemMatch: { email: managerEmail } } }
-//     ]
-//   });
-//   if (!dailyReportCol) {
-//     return res.send({ message: 'no daily report found for this manager in this date' });
-//   }
-//   const managerDataArray = dailyReportCol.dailyReport.filter(entry => entry.email === managerEmail);
-//   const managerData = managerDataArray[0];
-//   console.log(managerEmail);
-//   console.log(managerData)
-
-//   try {
-//     // Fetch data from the database using Mongoose
-//     const dataFromDatabase = 'rayhan'
-
-//     // Fetch image URL from the database
-//     const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706962846030-IMG-20240203-WA0000__1_-removebg.png";
-
-//     // Create a PDF
-//     const doc = new PDFDocument();
-
-//     // Use a writable stream to capture the PDF content
-//     const pdfBuffer = [];
-//     const pdfFilename = `invoice_${managerEmail}_${Date.now()}.pdf`;
-
-//     doc.on('data', chunk => pdfBuffer.push(chunk));
-//     doc.on('end', async () => {
-//       // Upload the PDF buffer to S3
-//       const params = {
-//         Bucket: 'loamic-media',
-//         Key: pdfFilename,
-//         Body: Buffer.concat(pdfBuffer),
-//         ContentType: 'application/pdf',
-//       };
-
-//       try {
-//         await s3.upload(params).promise();
-
-
-//         // Generate a pre-signed URL for the uploaded PDF
-//         const signedUrl = await s3.getSignedUrlPromise('getObject', {
-//           Bucket: 'loamic-media',
-//           Key: pdfFilename,
-//           Expires: 60 * 600, // Link expires in 5 minutes
-//         });
-
-//         // Send the pre-signed URL in JSON format as a response
-//         res.json({ downloadUrl: signedUrl });
-//       } catch (uploadError) {
-//         console.error(uploadError);
-//         res.status(500).send('Error uploading PDF to S3');
-//       }
-//     });
-
-//     const distanceMargin = 18;
-//     doc
-//       .fillAndStroke('#0e8cc3')
-//       .lineWidth(20)
-//       .lineJoin('round')
-//       .rect(
-//         distanceMargin,
-//         distanceMargin,
-//         doc.page.width - distanceMargin * 2,
-//         doc.page.height - distanceMargin * 2,
-//       )
-//       .stroke();
-
-//     try {
-//       const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-//       const imageBuffer = Buffer.from(imageResponse.data);
-//       doc.image(
-//         imageBuffer,
-//         doc.page.width / 2 - 190 / 2,
-//         60,
-//         {
-//           fit: [190, 100],
-//           align: 'center',
-//         }
-//       );
-//     } catch (imageError) {
-//       console.error('Error downloading image:', imageError);
-//       // Handle error, you may want to use a default image in case of failure
-//     }
-
-//     doc.moveDown();
-//     doc.moveDown();
-//     doc.moveDown();
-//     doc.moveDown();
-//     doc.moveDown();
-//     doc.moveDown();
-//     doc.moveDown();
-
-//     doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Manager', { align: 'center' });
-//     doc.moveDown();
-
-//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
-//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${managerData.job_name}`, { indent: 14 });
-//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Manager Name: ${managerData.employee_name}`, { indent: 14 });
-//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${todayDate}`, { indent: 14 });
-
-//     doc.moveDown(); // Move down to create space between sections
-
-//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center', underline: true });
-//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${managerData.weaitherCondition.condition.text}`, { indent: 14 });
-//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${managerData.weaitherCondition.temp_c}`, { indent: 14 });
-
-//     doc.moveDown();
-//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center', underline: true });
-//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${managerData.clockInAt} UTC+0`, { indent: 14 });
-//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${managerData.ClockOutAt} UTC+0`, { indent: 14 });
-
-//     doc.moveDown();
-
-//     doc.font('Times-Roman').fontSize(16).fill('#020617').text('Manpower', { align: 'center', underline: true });
-//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total workers: Comming Soon`, { indent: 14 });
-//     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total Injured: Comming Soon`, { indent: 14 });
-//     doc.moveDown();
-
-//     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center', underline: true });
-
-//     function addClickableImageLink(text, url) {
-//       // Calculate the maximum width of the entire line (text + URL)
-//       const lineMaxWidth = doc.widthOfString(`${text}: ${url}`, { indent: 20 });
-
-//       // Add text with a link
-//       doc.font('Times-Roman').fontSize(14).fill('#021c27').link(20, doc.y, lineMaxWidth, 20, url).text(`${text}: ${url}`, { indent: 20 });
-
-//       // Move down to create space for the next content
-//       doc.moveDown();
-//     }
-
-//     // Example usage
-//     addClickableImageLink('injury_img', managerData.injury_img);
-//     addClickableImageLink('progress_img', managerData.progress_img);
-//     addClickableImageLink('eod_img', managerData.eod_img);
-
-
-//     doc.moveDown();
-
-
-
-//     doc.moveDown();
-
-//     doc.end();
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).send('Internal Server Error');
-//   }
-// });
 
 
 // -------------------------------------------employeeClockInCard------------------------------------
