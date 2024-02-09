@@ -110,7 +110,7 @@ app.get('/activeEmployee', async (req, res) => {
 // -------------------------------getPdf---
 
 app.get('/test', async (req, res) => {
-  
+
 })
 
 // --------------------------daynamic_Pdf_Create------------------------
@@ -707,6 +707,7 @@ app.post('/managerCheckOut', async (req, res) => {
 // -------------------------------userCheckOut-----------------------------------
 app.post('/employeeCheckOut', async (req, res) => {
   const employeeId = parseInt(req.query.employeeId);
+  const { activity } = req.body;
   const dateObj = new Date();
   const dateString = dateObj.toISOString();
   const todayDate = dateString.substring(0, 10);
@@ -717,6 +718,7 @@ app.post('/employeeCheckOut', async (req, res) => {
     {
       $set: {
         'ClockInDetails.$[element].clockOutTime': currentTime,
+        'ClockInDetails.$[element].activity': activity,
       },
     },
     {
@@ -767,7 +769,7 @@ app.post('/checkIn', async (req, res) => {
     const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
     if (!isExists) {
-      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId: employee.ID, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo }] })
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId: employee.ID, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', activity: "added soon", managerInfo: dailyRunningPRoject.managerInfo }] })
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt, ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
@@ -778,7 +780,7 @@ app.post('/checkIn', async (req, res) => {
         const update = await clockInCollection.updateOne(
           { ID: userIdInt },
           {
-            $push: { ClockInDetails: { currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId: employee.ID, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', managerInfo: dailyRunningPRoject.managerInfo } },
+            $push: { ClockInDetails: { currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId: employee.ID, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', activity: "added soon", managerInfo: dailyRunningPRoject.managerInfo } },
           },
         );
         return res.send(update);
