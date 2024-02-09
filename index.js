@@ -364,8 +364,8 @@ app.get('/employeeActivitySend', async (req, res) => {
       const { Name, ClockInTime, clockOutTime, activity } = entry.ClockInDetails;
 
       doc.font('Times-Bold').fontSize(14).fill('#021c27').text(`Name: ${Name}`, { indent: 14 });
-      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${ClockInTime} UTC+0`, { indent: 14 });
-      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${clockOutTime} UTC+0`, { indent: 14 });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${ClockInTime}`, { indent: 14 });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${clockOutTime}`, { indent: 14 });
       doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Activity: ${activity}`, { indent: 14 });
 
       // Add spacing between entries
@@ -842,8 +842,8 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
 
     doc.moveDown();
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center', underline: true });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${managerData.clockInAt} UTC+0`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${managerData.ClockOutAt} UTC+0`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${managerData.clockInAt}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${managerData.ClockOutAt}`, { indent: 14 });
 
     doc.moveDown();
 
