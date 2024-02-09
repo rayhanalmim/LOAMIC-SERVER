@@ -113,12 +113,6 @@ app.get('/activeEmployee', async (req, res) => {
 // -------------------------------getPdf---
 
 app.get('/test', async (req, res) => {
-
-})
-
-// ---------------------------newPdfForEmployee-------
-
-app.get('/employeeActivitySend', async(req, res)=>{
   const managerId = parseInt(req.query.managerId);
   const manager = await adminCollection.findOne({ ID: managerId })
   const activeEmployee = await clockInCollection.aggregate([
@@ -150,7 +144,44 @@ app.get('/employeeActivitySend', async(req, res)=>{
     }
   ]);
   console.log(activeEmployee, manager);
-  
+  res.send(activeEmployee);
+})
+
+// ---------------------------newPdfForEmployee-------
+
+app.get('/employeeActivitySend', async (req, res) => {
+  const managerId = parseInt(req.query.managerId);
+  const manager = await adminCollection.findOne({ ID: managerId })
+  const activeEmployee = await clockInCollection.aggregate([
+    {
+      $match: {
+        'ClockInDetails.managerId': managerId,
+        'ClockInDetails.currentDate': todayDate,
+      }
+    },
+    {
+      $project: {
+        ClockInDetails: {
+          $arrayElemAt: [
+            {
+              $filter: {
+                input: '$ClockInDetails',
+                as: 'detail',
+                cond: {
+                  $and: [
+                    { $eq: ['$$detail.currentDate', todayDate] },
+                  ]
+                }
+              }
+            },
+            0
+          ]
+        }
+      }
+    }
+  ]);
+  console.log(activeEmployee, manager);
+
   try {
     // Fetch image URL from the database
     const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706962846030-IMG-20240203-WA0000__1_-removebg.png";
@@ -312,9 +343,24 @@ app.get('/employeeActivitySend', async(req, res)=>{
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (F): ${activeEmployee[0].ClockInDetails.projectInfo.weather_condition.temp_f}`, { indent: 14 });
 
     doc.moveDown();
-    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center', underline: true });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: '04:45' UTC+0`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: '05:00' UTC+0`, { indent: 14 });
+
+    
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information:', { align: 'center', underline: true });
+
+    doc.moveDown();
+    // Iterate over data array
+    activeEmployee.forEach(entry => {
+      const { Name, ClockInTime, clockOutTime, activity } = entry.ClockInDetails;
+
+      doc.font('Times-Bold').fontSize(14).fill('#021c27').text(`Name: ${Name}`, { indent: 14 });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: ${ClockInTime} UTC+0`, { indent: 14 });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: ${clockOutTime} UTC+0`, { indent: 14 });
+      doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Activity: ${activity}`, { indent: 14 });
+
+      // Add spacing between entries
+      doc.moveDown();
+      doc.moveDown();
+    });
 
     doc.moveDown();
 
@@ -327,7 +373,7 @@ app.get('/employeeActivitySend', async(req, res)=>{
     console.error(error);
     res.status(500).send('Internal Server Error');
   }
-  
+
 })
 
 // --------------------------daynamic_Pdf_Create------------------------
