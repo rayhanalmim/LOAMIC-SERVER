@@ -68,10 +68,13 @@ const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongo
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 
 const dateObj = new Date();
-const dateString = dateObj.toISOString();
-const todayDate = dateString.substring(0, 10);
-const currentTime = dateString.substring(11, 16);
+const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
 
+const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
+
+console.log("Today's Date (UTC-7):", todayDate);
+console.log("Current Time (UTC-7):", currentTime);
 
 app.get('/activeEmployee', async (req, res) => {
   const managerId = parseInt(req.query.managerId);
@@ -972,6 +975,7 @@ app.post('/managerCheckOut', async (req, res) => {
 // -------------------------------userCheckOut-----------------------------------
 app.post('/employeeCheckOut', async (req, res) => {
   const employeeId = parseInt(req.query.employeeId);
+  const { isInjury } = req.body;
   const { activity } = req.body;
 
   const result = await clockInCollection.findOneAndUpdate(
@@ -980,6 +984,7 @@ app.post('/employeeCheckOut', async (req, res) => {
       $set: {
         'ClockInDetails.$[element].clockOutTime': currentTime,
         'ClockInDetails.$[element].activity': activity,
+        'ClockInDetails.$[element].isInjury': isInjury,
       },
     },
     {
@@ -1027,7 +1032,7 @@ app.post('/checkIn', async (req, res) => {
     const isExists = await clockInCollection.findOne({ ID: userIdInt });
 
     if (!isExists) {
-      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId: employee.ID, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', activity: "added soon", managerInfo: dailyRunningPRoject.managerInfo }] })
+      const result = await clockInCollection.create({ ID: employee.ID, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, ClockInDetails: [{ currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId: employee.ID, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', isInjury: 'added soon', activity: "added soon", managerInfo: dailyRunningPRoject.managerInfo }] })
       return res.send(result)
     } else {
       const isCheckedIn = await clockInCollection.findOne({ ID: userIdInt, ClockInDetails: { $elemMatch: { currentDate: todayDate } } })
@@ -1038,7 +1043,7 @@ app.post('/checkIn', async (req, res) => {
         const update = await clockInCollection.updateOne(
           { ID: userIdInt },
           {
-            $push: { ClockInDetails: { currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId: employee.ID, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', activity: "added soon", managerInfo: dailyRunningPRoject.managerInfo } },
+            $push: { ClockInDetails: { currentDate: todayDate, Name: employee.First_Name + ' ' + employee.Last_Name_and_Suffix, employeeId: employee.ID, managerId, projectInfo: { project, weather_condition: newWeather }, ClockInTime: currentTime, clockOutTime: 'on the way', isInjury: 'added soon', activity: "added soon", managerInfo: dailyRunningPRoject.managerInfo } },
           },
         );
         return res.send(update);
