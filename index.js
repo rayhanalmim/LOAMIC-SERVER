@@ -149,8 +149,184 @@ app.get('/employeeActivitySend', async(req, res)=>{
       }
     }
   ]);
-  console.log(activeEmployee);
-  res.send(activeEmployee);
+  console.log(activeEmployee, manager);
+  
+  try {
+    // Fetch image URL from the database
+    const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706962846030-IMG-20240203-WA0000__1_-removebg.png";
+
+    // Create a PDF
+    const doc = new PDFDocument();
+
+    // Use a writable stream to capture the PDF content
+    const pdfBuffer = [];
+    const pdfFilename = `invoice_${manager.Employee_First_Name}_${Date.now()}.pdf`;
+
+    doc.on('data', chunk => pdfBuffer.push(chunk));
+    doc.on('end', async () => {
+      // Create a transporter for sending emails
+      try {
+
+        // Upload the PDF buffer to S3
+        const params = {
+          Bucket: 'loamic-media',
+          Key: pdfFilename,
+          Body: Buffer.concat(pdfBuffer),
+          ContentType: 'application/pdf',
+        };
+
+        await s3.upload(params).promise();
+
+        // Generate a pre-signed URL for the uploaded PDF
+        const signedUrl = await s3.getSignedUrlPromise('getObject', {
+          Bucket: 'loamic-media',
+          Key: pdfFilename,
+          Expires: 60 * 6000, // Link expires in 5 minutes
+        });
+
+        // Send email with the generated PDF link
+        const emailOptions = {
+          from: 'rayhanalmim1@gmail.com',
+          to: 'epiczone54@gmail.com', // recipient email address
+          subject: 'Employee Activity',
+          html: `<!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Employee Daily Activity</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+              }
+              .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                border: 1px solid #ccc;
+              }
+              .logo img {
+                max-width: 100px;
+                height: auto;
+              }
+              .report-info {
+                margin-top: 20px;
+              }
+              .info p {
+                margin: 5px 0;
+              }
+              .info p strong {
+                font-weight: bold;
+              }
+              .info p a {
+                color: blue;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="logo">
+                <img src="https://loamic-media.s3.us-east-2.amazonaws.com/1706962846030-IMG-20240203-WA0000__1_-removebg.png" alt="Loamic Builders Logo">
+              </div>
+              <div class="report-info">
+                <h2>Employee Daily Activity</h2>
+                <div class="info">
+                  <p><strong>Manager Name:</strong> ${manager.Employee_First_Name + ' ' + manager.Employee_Last_Name_and_Suffix}</p>
+                  <p><strong>Date:</strong> ${todayDate}</p>
+                  <p><strong>Daily Report PDF:</strong> <a href="${signedUrl}">Download PDF</a></p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+          `,
+        };
+
+        transporter.sendMail(emailOptions, (err, info) => {
+          if (err) {
+            console.error('Error sending email:', err);
+            res.status(500).send('Error sending email');
+          } else {
+            console.log('Email sent successfully:', info);
+            // Send the pre-signed URL in JSON format as a response
+            res.json({ downloadUrl: signedUrl, message: 'Email sent successfully' });
+          }
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
+      }
+    });
+
+    // PDF content creation...
+    const distanceMargin = 18;
+    doc
+      .fillAndStroke('#0e8cc3')
+      .lineWidth(20)
+      .lineJoin('round')
+      .rect(
+        distanceMargin,
+        distanceMargin,
+        doc.page.width - distanceMargin * 2,
+        doc.page.height - distanceMargin * 2,
+      )
+      .stroke();
+
+    try {
+      const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const imageBuffer = Buffer.from(imageResponse.data);
+      doc.image(
+        imageBuffer,
+        doc.page.width / 2 - 190 / 2,
+        60,
+        {
+          fit: [190, 100],
+          align: 'center',
+        }
+      );
+    } catch (imageError) {
+      console.error('Error downloading image:', imageError);
+      // Handle error, you may want to use a default image in case of failure
+    }
+
+    doc.moveDown();
+    doc.moveDown();
+    doc.moveDown();
+    doc.moveDown();
+    doc.moveDown();
+    doc.moveDown();
+    doc.moveDown();
+
+    doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Employee', { align: 'center' });
+    doc.moveDown();
+
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Job Name: ${activeEmployee[0].ClockInDetails.projectInfo.project.Project_Name}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Superintendent Name: ${manager.Employee_First_Name + ' ' + manager.Employee_Last_Name_and_Suffix}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Date: ${todayDate}`, { indent: 14 });
+
+    doc.moveDown(); // Move down to create space between sections
+
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center', underline: true });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${activeEmployee[0].ClockInDetails.projectInfo.weather_condition.condition.text}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (F): ${activeEmployee[0].ClockInDetails.projectInfo.weather_condition.temp_f}`, { indent: 14 });
+
+    doc.moveDown();
+    doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center', underline: true });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock In At: '04:45' UTC+0`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Clock Out At: '05:00' UTC+0`, { indent: 14 });
+
+    doc.moveDown();
+
+    doc.moveDown();
+
+    doc.end();
+
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
   
 })
 
