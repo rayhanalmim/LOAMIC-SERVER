@@ -218,7 +218,7 @@ app.get('/employeeActivitySend', async (req, res) => {
         // Send email with the generated PDF link
         const emailOptions = {
           from: 'rayhanalmim1@gmail.com',
-          to: 'epiczone54@gmail.com', // recipient email address
+          to: 'Laith@loamicbuilders.com', // recipient email address
           subject: 'Employee Activity',
           html: `<!DOCTYPE html>
           <html lang="en">
@@ -777,19 +777,26 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
       }
     });
 
-    // PDF content creation...
-    const distanceMargin = 18;
-    doc
-      .fillAndStroke('#0e8cc3')
-      .lineWidth(20)
-      .lineJoin('round')
-      .rect(
-        distanceMargin,
-        distanceMargin,
-        doc.page.width - distanceMargin * 2,
-        doc.page.height - distanceMargin * 2,
-      )
-      .stroke();
+    // Function to draw a border on the page
+    function drawBorder() {
+      const distanceMargin = 18;
+      doc.fillAndStroke('#0e8cc3')
+        .lineWidth(20)
+        .lineJoin('round')
+        .rect(
+          distanceMargin,
+          distanceMargin,
+          doc.page.width - distanceMargin * 2,
+          doc.page.height - distanceMargin * 2,
+        )
+        .stroke();
+    }
+    drawBorder();
+
+    // Event handler to draw border on each new page
+    doc.on('pageAdded', () => {
+      drawBorder();
+    });
 
     try {
       const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
@@ -858,13 +865,13 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
       for (const [fieldName, urls] of Object.entries(groupedImages)) {
         // Add file name as title
         if (fieldName === 'imagePath1') {
-          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Progress Image ", { indent: 14 });
+          doc.font('Times-Bold').fontSize(14).fill('#021c27').text("Progress Image: ", { indent: 14 });
         }
         else if (fieldName === 'imagePath2') {
-          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("EOD Image: ", { indent: 14 });
+          doc.font('Times-Bold').fontSize(14).fill('#021c27').text("EOD Image: ", { indent: 14 });
         }
         else if (fieldName === 'imagePath3') {
-          doc.font('Times-Roman').fontSize(14).fill('#021c27').text("Receipt: ", { indent: 14 });
+          doc.font('Times-Bold').fontSize(14).fill('#021c27').text("Receipt: ", { indent: 14 });
         }
         // Add images
         for (const imageUrl of urls) {
