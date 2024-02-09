@@ -264,7 +264,7 @@ app.get('/employeeActivitySend', async (req, res) => {
                 <div class="info">
                   <p><strong>Manager Name:</strong> ${manager.Employee_First_Name + ' ' + manager.Employee_Last_Name_and_Suffix}</p>
                   <p><strong>Date:</strong> ${todayDate}</p>
-                  <p><strong>Daily Report PDF:</strong> <a href="${signedUrl}">Download PDF</a></p>
+                  <p><strong>Employee Daily Activity PDF:</strong> <a href="${signedUrl}">Download PDF</a></p>
                 </div>
               </div>
             </div>
