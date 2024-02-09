@@ -328,7 +328,7 @@ app.get('/employeeActivitySend', async (req, res) => {
     doc.moveDown();
     doc.moveDown();
 
-    doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Daily Report For Employee', { align: 'center' });
+    doc.font('Times-Roman').fontSize(20).fill('#C2272F').text('Employees Daily Activity', { align: 'center' });
     doc.moveDown();
 
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Job Informations', { align: 'center', underline: true });
