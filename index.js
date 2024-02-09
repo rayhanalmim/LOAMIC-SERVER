@@ -289,19 +289,27 @@ app.get('/employeeActivitySend', async (req, res) => {
       }
     });
 
-    // PDF content creation...
-    const distanceMargin = 18;
-    doc
-      .fillAndStroke('#0e8cc3')
-      .lineWidth(20)
-      .lineJoin('round')
-      .rect(
-        distanceMargin,
-        distanceMargin,
-        doc.page.width - distanceMargin * 2,
-        doc.page.height - distanceMargin * 2,
-      )
-      .stroke();
+    // Function to draw a border on the page
+    function drawBorder() {
+      const distanceMargin = 18;
+      doc.fillAndStroke('#0e8cc3')
+        .lineWidth(20)
+        .lineJoin('round')
+        .rect(
+          distanceMargin,
+          distanceMargin,
+          doc.page.width - distanceMargin * 2,
+          doc.page.height - distanceMargin * 2,
+        )
+        .stroke();
+    }
+    drawBorder();
+
+    // Event handler to draw border on each new page
+    doc.on('pageAdded', () => {
+      drawBorder();
+    });
+
 
     try {
       const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
@@ -344,7 +352,7 @@ app.get('/employeeActivitySend', async (req, res) => {
 
     doc.moveDown();
 
-    
+
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information:', { align: 'center', underline: true });
 
     doc.moveDown();
