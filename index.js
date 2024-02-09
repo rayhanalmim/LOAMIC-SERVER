@@ -67,11 +67,14 @@ const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.S
 const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongoose.Schema({}, { strict: false }));
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 
+const dateObj = new Date();
+const dateString = dateObj.toISOString();
+const todayDate = dateString.substring(0, 10);
+const currentTime = dateString.substring(11, 16);
+
 
 app.get('/activeEmployee', async (req, res) => {
   const managerId = parseInt(req.query.managerId);
-  const dateObj = new Date();
-  const todayDate = dateObj.toISOString().substring(0, 10);
 
   const activeEmployee = await clockInCollection.aggregate([
     {
@@ -113,12 +116,47 @@ app.get('/test', async (req, res) => {
 
 })
 
+// ---------------------------newPdfForEmployee-------
+
+app.get('/employeeActivitySend', async(req, res)=>{
+  const managerId = parseInt(req.query.managerId);
+  const manager = await adminCollection.findOne({ ID: managerId })
+  const activeEmployee = await clockInCollection.aggregate([
+    {
+      $match: {
+        'ClockInDetails.managerId': managerId,
+        'ClockInDetails.currentDate': todayDate,
+      }
+    },
+    {
+      $project: {
+        ClockInDetails: {
+          $arrayElemAt: [
+            {
+              $filter: {
+                input: '$ClockInDetails',
+                as: 'detail',
+                cond: {
+                  $and: [
+                    { $eq: ['$$detail.currentDate', todayDate] },
+                  ]
+                }
+              }
+            },
+            0
+          ]
+        }
+      }
+    }
+  ]);
+  console.log(activeEmployee);
+  res.send(activeEmployee);
+  
+})
+
 // --------------------------daynamic_Pdf_Create------------------------
 
 app.get('/downloadEmployeeDailyReport', async (req, res) => {
-  const dateObj = new Date();
-  const dateString = dateObj.toISOString();
-  const todayDate = dateString.substring(0, 10);
   const employeeId = parseInt(req.query.employeeId);
 
   const dailyReportCol = await dailyReportCollection.findOne({
@@ -388,9 +426,6 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
 });
 
 app.get('/downloadManagerDailyReport', async (req, res) => {
-  const dateObj = new Date();
-  const dateString = dateObj.toISOString();
-  const todayDate = dateString.substring(0, 10);
   const managerEmail = req.query.managerEmail;
 
   const dailyReportCol = await managerDailyReportCollection.findOne({
@@ -659,9 +694,6 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
 
 app.get('/employeeClockInCard', async (req, res) => {
   const id = parseInt(req.query.userId);
-  const dateObj = new Date();
-  const dateString = dateObj.toISOString();
-  const todayDate = dateString.substring(0, 10);
 
   const employeeData = await clockInCollection.findOne({ ID: id })
   const clockInDetails = employeeData.ClockInDetails.filter(entry => entry.currentDate === todayDate);
@@ -687,10 +719,6 @@ app.get('/managerCheckIn', async (req, res) => {
 
 app.post('/managerCheckOut', async (req, res) => {
   const managerID = parseInt(req.query.managerId);
-  const dateObj = new Date();
-  const dateString = dateObj.toISOString();
-  const todayDate = dateString.substring(0, 10);
-  const currentTime = dateString.substring(11, 16);
 
   const project = await dailyRunningProject.findOne({ 'managerInfo.ID': managerID })
   if (project) {
@@ -708,10 +736,6 @@ app.post('/managerCheckOut', async (req, res) => {
 app.post('/employeeCheckOut', async (req, res) => {
   const employeeId = parseInt(req.query.employeeId);
   const { activity } = req.body;
-  const dateObj = new Date();
-  const dateString = dateObj.toISOString();
-  const todayDate = dateString.substring(0, 10);
-  const currentTime = dateString.substring(11, 16);
 
   const result = await clockInCollection.findOneAndUpdate(
     { "ID": employeeId },
@@ -735,10 +759,7 @@ app.post('/checkIn', async (req, res) => {
   const userIdInt = parseInt(req.query.userId);
   const managerId = parseInt(req.query.managerId);
   const role = req.query.role;
-  const dateObj = new Date();
-  const dateString = dateObj.toISOString();
-  const todayDate = dateString.substring(0, 10);
-  const currentTime = dateString.substring(11, 16);
+
 
   const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1, cover_image_url: 1, latitude: 1, longitude: 1 });
   const dailyRunningPRoject = await dailyRunningProject.findOne({ 'project.Project_id': projectIdInt }, { managerInfo: 1 })
@@ -797,10 +818,6 @@ app.post('/dailyReport', async (req, res) => {
   const workingUnderManagerId = parseInt(req.query.workingUnderManagerId);
   const role = req.query.role;
   const { activity, rental, isInjury } = req.query;
-  // const { activity, rental, isInjury, date, workingUnderManagerId, employee, hours, injured } = req.body;
-  const dateObj = new Date();
-  const dateString = dateObj.toISOString();
-  const todayDate = dateString.substring(0, 10);
 
   const project = await projectCollection.findOne({ Project_id: projectId }, { Project_id: 1, Project_Name: 1, _id: 0, latitude: 1, longitude: 1 });
   const newWeatherInfo = await axios.get(`https://api.weatherapi.com/v1/current.json?q=${project.latitude},${project.longitude}&key=${process.env.SECRETKEY}`);
@@ -956,6 +973,7 @@ app.get('/users', async (req, res) => {
   const result = await userCollection.find();
   res.send(result);
 })
+
 app.get('/getManagerDailyReport', async (req, res) => {
   const result = await managerDailyReportCollection.find();
   res.send(result);
