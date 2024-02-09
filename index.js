@@ -191,7 +191,7 @@ app.get('/employeeActivitySend', async (req, res) => {
 
     // Use a writable stream to capture the PDF content
     const pdfBuffer = [];
-    const pdfFilename = `invoice_${manager.Employee_First_Name}_${Date.now()}.pdf`;
+    const pdfFilename = `${manager.Employee_First_Name}_${Date.now()}.pdf`;
 
     doc.on('data', chunk => pdfBuffer.push(chunk));
     doc.on('end', async () => {
@@ -673,7 +673,7 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
 
     // Use a writable stream to capture the PDF content
     const pdfBuffer = [];
-    const pdfFilename = `invoice_${managerEmail}_${Date.now()}.pdf`;
+    const pdfFilename = `${managerEmail}_${Date.now()}.pdf`;
 
     doc.on('data', chunk => pdfBuffer.push(chunk));
     doc.on('end', async () => {
@@ -820,7 +820,7 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
 
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Weather Informations', { align: 'center', underline: true });
     doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Weather Condition: ${managerData.weaitherCondition.condition.text}`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°C): ${managerData.weaitherCondition.temp_c}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Temperature (°F): ${managerData.weaitherCondition.temp_f}`, { indent: 14 });
 
     doc.moveDown();
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Checking Information', { align: 'center', underline: true });
