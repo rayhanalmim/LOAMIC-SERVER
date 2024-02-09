@@ -66,7 +66,6 @@ const managerDailyReportCollection = mongoose.model('managerDailyReport', new mo
 const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.Schema({}, { strict: false }));
 const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongoose.Schema({}, { strict: false }));
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
-const imageCollection = mongoose.model('imageTempCo', new mongoose.Schema({}, { strict: false }));
 
 
 app.get('/activeEmployee', async (req, res) => {
