@@ -74,7 +74,8 @@ app.get('/date', async (req, res) => {
   const todayDate = utcMinus7Date.toISOString().substring(0, 10);
   const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
   console.log(todayDate, currentTime);
-  res.send({ message: `Today Date: ${todayDate} and currentTime: ${currentTime}` })
+  const data = await clockInCollection.find();
+  res.send(data)
 })
 
 app.get('/activeEmployee', async (req, res) => {
@@ -134,28 +135,10 @@ app.get('/test', async (req, res) => {
       $match: {
         'ClockInDetails.managerId': managerId,
         'ClockInDetails.currentDate': todayDate,
+        'ClockInDetails.clockOutTime': 'on the way',
       }
     },
-    {
-      $project: {
-        ClockInDetails: {
-          $arrayElemAt: [
-            {
-              $filter: {
-                input: '$ClockInDetails',
-                as: 'detail',
-                cond: {
-                  $and: [
-                    { $eq: ['$$detail.currentDate', todayDate] },
-                  ]
-                }
-              }
-            },
-            0
-          ]
-        }
-      }
-    }
+    
   ]);
   console.log(activeEmployee, manager);
   res.send(activeEmployee);
@@ -989,17 +972,38 @@ app.get('/managerCheckIn', async (req, res) => {
 })
 
 app.post('/managerCheckOut', async (req, res) => {
+  const managerID = parseInt(req.query.managerId);
   const dateObj = new Date();
   const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
 
   const todayDate = utcMinus7Date.toISOString().substring(0, 10);
   const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
-  const managerID = parseInt(req.query.managerId);
+ 
+  const updateQuery = {
+    'ClockInDetails': {
+      $elemMatch: {
+        'managerId': managerID,
+        'currentDate': todayDate,
+        'clockOutTime': 'on the way'
+      }
+    }
+  };
 
   const project = await dailyRunningProject.findOne({ 'managerInfo.ID': managerID })
   if (project) {
     const insert = await managerCheckInCollection.create({ projectData: project, checkOutDate: todayDate, checkOutTime: currentTime });
     const remove = await dailyRunningProject.deleteOne({ 'managerInfo.ID': managerID });
+
+    const updateResult = await clockInCollection.updateMany(
+      updateQuery,
+      { 
+        $set: { 
+          'ClockInDetails.$.clockOutTime': currentTime,
+          'ClockInDetails.$.activity': 'The manager clocked out directly, without close this employee time card' 
+        } 
+      }
+    );
+
     console.log(remove)
     return res.send(remove);
   }
