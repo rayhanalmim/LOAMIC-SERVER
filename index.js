@@ -67,10 +67,6 @@ const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.S
 const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongoose.Schema({}, { strict: false }));
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 
-app.get('/getData', async (req, res) => {
-  const result = await userCollection.find();
-  res.send(result);
-})
 
 app.get('/activeEmployee', async (req, res) => {
   const dateObj = new Date();
@@ -113,38 +109,6 @@ app.get('/activeEmployee', async (req, res) => {
 
   res.send(activeEmployee);
 });
-
-// -------------------------------getPdf---
-
-app.get('/test', async (req, res) => {
-  const managerId = parseInt(req.query.managerId);
-  const dateObj = new Date();
-  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
-
-  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
-  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
-  
-  const manager = await adminCollection.findOne({ ID: managerId })
-  const totalInjured = await clockInCollection.aggregate([
-    {
-      $match: {
-        'ClockInDetails.managerId': managerId,
-        'ClockInDetails.currentDate': todayDate,
-        'ClockInDetails.isInjury': 'true',
-      }
-    },
-  ]);
-  const totalEmployee = await clockInCollection.aggregate([
-    {
-      $match: {
-        'ClockInDetails.managerId': managerId,
-        'ClockInDetails.currentDate': todayDate,
-      }
-    },
-  ]);
-  console.log(totalInjured.length, totalEmployee.length);
-  res.send(totalEmployee);
-})
 
 // ---------------------------newPdfForEmployee-------
 
