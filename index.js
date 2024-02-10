@@ -41,7 +41,8 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.tdvw5wt.mongodb.net/loamicDB?retryWrites=true&w=majority`;
+
+const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.pa6zcqm.mongodb.net/loamicDB?retryWrites=true&w=majority`;
 
 mongoose.connect(uri, {
 });
@@ -186,7 +187,7 @@ app.get('/employeeActivitySend', async (req, res) => {
         // Send email with the generated PDF link
         const emailOptions = {
           from: 'rayhanalmim1@gmail.com',
-          to: 'Laith@loamicbuilders.com', // recipient email address
+          to: 'epiczone54@gmail.com', // recipient email address
           subject: 'Employee Activity',
           html: `<!DOCTYPE html>
           <html lang="en">
@@ -684,7 +685,7 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
         // Send email with the generated PDF link
         const emailOptions = {
           from: 'accounting@loamicbuilders.com',
-          to: 'Laith@loamicbuilders.com',
+          to: 'epiczone54@gmail.com',
           subject: 'Daily Report PDF',
           html: `<!DOCTYPE html>
           <html lang="en">
@@ -823,8 +824,8 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
     doc.moveDown();
 
     doc.font('Times-Roman').fontSize(16).fill('#020617').text('Manpower', { align: 'center', underline: true });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total workers: Comming Soon`, { indent: 14 });
-    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total Injured: Comming Soon`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total workers: ${managerData.manpower.employee}`, { indent: 14 });
+    doc.font('Times-Roman').fontSize(14).fill('#021c27').text(`Total Injured: ${managerData.manpower.injured}`, { indent: 14 });
     doc.moveDown();
 
     doc.font('Times-Roman').fontSize(17).fill('#020617').text('Image', { align: 'center', underline: true });
@@ -1201,9 +1202,9 @@ app.post('/dailyReport', async (req, res) => {
           email: manager.email_address,
           activity: activity,
           manpower: {
-            employee: `${totalInjured.length}`,
-            hours: "hours",
-            injured: `${totalEmployee.length}`,
+            employee: `${totalEmployee.length}`,
+            hours: "",
+            injured: `${totalInjured.length}`,
           },
           rental: rental,
           isInjury: false,
