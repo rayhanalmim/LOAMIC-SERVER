@@ -940,7 +940,7 @@ app.get('/managerCheckIn', async (req, res) => {
       $match: {
         'ClockInDetails.managerId': managerID,
         'ClockInDetails.currentDate': todayDate,
-        'ClockInDetails.isInjury': 'true',
+        'ClockInDetails.isInjury': 'Yes',
       }
     },
   ]);
@@ -1213,7 +1213,7 @@ app.post('/dailyReport', async (req, res) => {
             $match: {
               'ClockInDetails.managerId': userId,
               'ClockInDetails.currentDate': todayDate,
-              'ClockInDetails.isInjury': 'true',
+              'ClockInDetails.isInjury': 'Yes',
             }
           },
         ]);
