@@ -123,25 +123,33 @@ app.get('/activeEmployee', async (req, res) => {
 // -------------------------------getPdf---
 
 app.get('/test', async (req, res) => {
+  const managerId = parseInt(req.query.managerId);
   const dateObj = new Date();
   const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
 
   const todayDate = utcMinus7Date.toISOString().substring(0, 10);
   const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
-  const managerId = parseInt(req.query.managerId);
+  
   const manager = await adminCollection.findOne({ ID: managerId })
-  const activeEmployee = await clockInCollection.aggregate([
+  const totalInjured = await clockInCollection.aggregate([
     {
       $match: {
         'ClockInDetails.managerId': managerId,
         'ClockInDetails.currentDate': todayDate,
-        'ClockInDetails.clockOutTime': 'on the way',
+        'ClockInDetails.isInjury': 'true',
       }
     },
-    
   ]);
-  console.log(activeEmployee, manager);
-  res.send(activeEmployee);
+  const totalEmployee = await clockInCollection.aggregate([
+    {
+      $match: {
+        'ClockInDetails.managerId': managerId,
+        'ClockInDetails.currentDate': todayDate,
+      }
+    },
+  ]);
+  console.log(totalInjured.length, totalEmployee.length);
+  res.send(totalEmployee);
 })
 
 // ---------------------------newPdfForEmployee-------
@@ -1207,6 +1215,24 @@ app.post('/dailyReport', async (req, res) => {
           ]
         });
 
+        const totalInjured = await clockInCollection.aggregate([
+          {
+            $match: {
+              'ClockInDetails.managerId': userId,
+              'ClockInDetails.currentDate': todayDate,
+              'ClockInDetails.isInjury': 'true',
+            }
+          },
+        ]);
+        const totalEmployee = await clockInCollection.aggregate([
+          {
+            $match: {
+              'ClockInDetails.managerId': userId,
+              'ClockInDetails.currentDate': todayDate,
+            }
+          },
+        ]);
+
         const dailyReportForManager = {
           job_name: project.Project_Name,
           job_id: project.Project_id,
@@ -1218,9 +1244,9 @@ app.post('/dailyReport', async (req, res) => {
           email: manager.email_address,
           activity: activity,
           manpower: {
-            employee: "employee",
+            employee: `${totalInjured.length}`,
             hours: "hours",
-            injured: "injured",
+            injured: `${totalEmployee.length}`,
           },
           rental: rental,
           isInjury: false,
