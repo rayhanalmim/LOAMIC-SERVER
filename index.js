@@ -929,7 +929,42 @@ app.get('/avalableProjectForEmployee', async (req, res) => {
 
 app.get('/managerCheckIn', async (req, res) => {
   const managerID = parseInt(req.query.managerId);
-  const result = await dailyRunningProject.findOne({ 'managerInfo.ID': managerID })
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
+
+  const totalInjured = await clockInCollection.aggregate([
+    {
+      $match: {
+        'ClockInDetails.managerId': managerID,
+        'ClockInDetails.currentDate': todayDate,
+        'ClockInDetails.isInjury': 'true',
+      }
+    },
+  ]);
+  const totalEmployee = await clockInCollection.aggregate([
+    {
+      $match: {
+        'ClockInDetails.managerId': managerID,
+        'ClockInDetails.currentDate': todayDate,
+      }
+    },
+  ]);
+
+  const update = await dailyRunningProject.findOneAndUpdate(
+    { "managerInfo.ID": managerID },
+    {
+      $set: {
+        'manpower.employee': `${totalEmployee.length}`,
+        'manpower.injured': `${totalInjured.length}`,
+        'manpower.hours': ``,
+      },
+    });
+
+  const result = await dailyRunningProject.findOne({ "managerInfo.ID": managerID });
+
   if (result) {
     return res.send(result);
   }
@@ -945,7 +980,7 @@ app.post('/managerCheckOut', async (req, res) => {
 
   const todayDate = utcMinus7Date.toISOString().substring(0, 10);
   const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
- 
+
   const updateQuery = {
     'ClockInDetails': {
       $elemMatch: {
@@ -963,11 +998,11 @@ app.post('/managerCheckOut', async (req, res) => {
 
     const updateResult = await clockInCollection.updateMany(
       updateQuery,
-      { 
-        $set: { 
+      {
+        $set: {
           'ClockInDetails.$.clockOutTime': currentTime,
-          'ClockInDetails.$.activity': 'system generated clock out' 
-        } 
+          'ClockInDetails.$.activity': 'system generated clock out'
+        }
       }
     );
 
@@ -981,14 +1016,14 @@ app.post('/managerCheckOut', async (req, res) => {
 
 // -------------------------------userCheckOut-----------------------------------
 
-app.post('/employeeCheckOut', async (req, res)=>{
+app.post('/employeeCheckOut', async (req, res) => {
   const employeeId = parseInt(req.query.employeeId);
   const { isInjury, activity } = req.body;
   const dateObj = new Date();
   const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
   const todayDate = utcMinus7Date.toISOString().substring(0, 10);
   const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
-  
+
   const result = await clockInCollection.findOneAndUpdate(
     { "ID": employeeId },
     {
