@@ -67,16 +67,22 @@ const dailyRunningProject = mongoose.model('dailyRunningProject', new mongoose.S
 const managerCheckInCollection = mongoose.model('AllCheckIn(Manager)', new mongoose.Schema({}, { strict: false }));
 const clockInCollection = mongoose.model('clockInCollection', new mongoose.Schema({}, { strict: false }));
 
-const dateObj = new Date();
-const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+app.get('/date', async (req, res) => {
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
 
-const todayDate = utcMinus7Date.toISOString().substring(0, 10);
-const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
-
-console.log("Today's Date (UTC-7):", todayDate);
-console.log("Current Time (UTC-7):", currentTime);
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
+  console.log(todayDate, currentTime);
+  res.send({ message: `Today Date: ${todayDate} and currentTime: ${currentTime}` })
+})
 
 app.get('/activeEmployee', async (req, res) => {
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
   const managerId = parseInt(req.query.managerId);
 
   const activeEmployee = await clockInCollection.aggregate([
@@ -116,6 +122,11 @@ app.get('/activeEmployee', async (req, res) => {
 // -------------------------------getPdf---
 
 app.get('/test', async (req, res) => {
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
   const managerId = parseInt(req.query.managerId);
   const manager = await adminCollection.findOne({ ID: managerId })
   const activeEmployee = await clockInCollection.aggregate([
@@ -153,6 +164,11 @@ app.get('/test', async (req, res) => {
 // ---------------------------newPdfForEmployee-------
 
 app.get('/employeeActivitySend', async (req, res) => {
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
   const managerId = parseInt(req.query.managerId);
   const manager = await adminCollection.findOne({ ID: managerId })
   const activeEmployee = await clockInCollection.aggregate([
@@ -390,6 +406,11 @@ app.get('/employeeActivitySend', async (req, res) => {
 // --------------------------daynamic_Pdf_Create------------------------
 
 app.get('/downloadEmployeeDailyReport', async (req, res) => {
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
   const employeeId = parseInt(req.query.employeeId);
 
   const dailyReportCol = await dailyReportCollection.findOne({
@@ -659,6 +680,11 @@ app.get('/downloadEmployeeDailyReport', async (req, res) => {
 });
 
 app.get('/downloadManagerDailyReport', async (req, res) => {
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
   const managerEmail = req.query.managerEmail;
 
   const dailyReportCol = await managerDailyReportCollection.findOne({
@@ -933,6 +959,11 @@ app.get('/downloadManagerDailyReport', async (req, res) => {
 // -------------------------------------------employeeClockInCard------------------------------------
 
 app.get('/employeeClockInCard', async (req, res) => {
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
   const id = parseInt(req.query.userId);
 
   const employeeData = await clockInCollection.findOne({ ID: id })
@@ -958,6 +989,11 @@ app.get('/managerCheckIn', async (req, res) => {
 })
 
 app.post('/managerCheckOut', async (req, res) => {
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
   const managerID = parseInt(req.query.managerId);
 
   const project = await dailyRunningProject.findOne({ 'managerInfo.ID': managerID })
@@ -974,6 +1010,11 @@ app.post('/managerCheckOut', async (req, res) => {
 
 // -------------------------------userCheckOut-----------------------------------
 app.post('/employeeCheckOut', async (req, res) => {
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
   const employeeId = parseInt(req.query.employeeId);
   const { isInjury } = req.body;
   const { activity } = req.body;
@@ -1001,6 +1042,11 @@ app.post('/checkIn', async (req, res) => {
   const userIdInt = parseInt(req.query.userId);
   const managerId = parseInt(req.query.managerId);
   const role = req.query.role;
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
 
 
   const project = await projectCollection.findOne({ Project_id: projectIdInt }, { Project_id: 1, Project_Name: 1, Awarding_Body: 1, Client: 1, _id: 0, Project: 1, cover_image_url: 1, latitude: 1, longitude: 1 });
@@ -1060,6 +1106,11 @@ app.post('/dailyReport', async (req, res) => {
   const workingUnderManagerId = parseInt(req.query.workingUnderManagerId);
   const role = req.query.role;
   const { activity, rental, isInjury } = req.query;
+  const dateObj = new Date();
+  const utcMinus7Date = new Date(dateObj.getTime() - (0 * 60 * 60 * 1000)); // Subtract 7 hours from current time
+
+  const todayDate = utcMinus7Date.toISOString().substring(0, 10);
+  const currentTime = utcMinus7Date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
 
   const project = await projectCollection.findOne({ Project_id: projectId }, { Project_id: 1, Project_Name: 1, _id: 0, latitude: 1, longitude: 1 });
   const newWeatherInfo = await axios.get(`https://api.weatherapi.com/v1/current.json?q=${project.latitude},${project.longitude}&key=${process.env.SECRETKEY}`);
