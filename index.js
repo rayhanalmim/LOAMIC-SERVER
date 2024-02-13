@@ -1254,7 +1254,6 @@ app.post('/dailyReport', async (req, res) => {
             { dailyReport: { $elemMatch: { email: manager.email_address } } }
           ]
         });
-        console.log(isDailyReportExists);
 
         if (!isDailyReportExists) {
           const todayCollection = await managerDailyReportCollection.findOne({ Date: todayDate });
@@ -1266,10 +1265,22 @@ app.post('/dailyReport', async (req, res) => {
                 $push: { dailyReport: dailyReportForManager },
               },
             );
+            const deleteData = await managerCheckInCollection.deleteOne({
+              $and: [
+                { 'projectData.managerInfo.ID': userId },
+                { checkOutDate: todayDate }
+              ]
+            });
             return res.send(update);
           }
           else {
             const create = await managerDailyReportCollection.create({ Date: todayDate, dailyReport: [dailyReportForManager] })
+            const deleteData = await managerCheckInCollection.deleteOne({
+              $and: [
+                { 'projectData.managerInfo.ID': userId },
+                { checkOutDate: todayDate }
+              ]
+            });
             return res.send(create);
           }
         } else {
