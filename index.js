@@ -1168,7 +1168,6 @@ app.post('/dailyReport', async (req, res) => {
         const dailyReport = {
           job_name: project.Project_Name,
           job_id: project.Project_id,
-          // clockInTime: clockInfo
           employee_name: user.First_Name + ' ' + user.Last_Name_and_Suffix,
           workingUnderManagerId: workingUnderManagerId,
           employeeId: userId,
