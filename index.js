@@ -152,19 +152,15 @@ app.get('/employeeActivitySend', async (req, res) => {
   console.log(activeEmployee, manager);
 
   try {
-    // Fetch image URL from the database
     const imageUrl = "https://loamic-media.s3.us-east-2.amazonaws.com/1706962846030-IMG-20240203-WA0000__1_-removebg.png";
 
-    // Create a PDF
     const doc = new PDFDocument();
 
-    // Use a writable stream to capture the PDF content
     const pdfBuffer = [];
     const pdfFilename = `${manager.Employee_First_Name}_${Date.now()}.pdf`;
 
     doc.on('data', chunk => pdfBuffer.push(chunk));
     doc.on('end', async () => {
-      // Create a transporter for sending emails
       try {
 
         // Upload the PDF buffer to S3
